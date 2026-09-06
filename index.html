@@ -208,7 +208,7 @@ let currentAudio = null;
 
 function stopCurrentAudio(){
   if(currentAudio){
-    currentAudio.pause();
+    try{ currentAudio.pause(); }catch(e){}
     try{ currentAudio.currentTime = 0; }catch(e){}
     currentAudio = null;
   }
@@ -218,25 +218,27 @@ function playTibok(){
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.tibok.src);
   currentAudio.addEventListener('loadedmetadata', () => {
-    try{ currentAudio.currentTime = audioConfig.tibok.startTime; }catch(e){}
-    currentAudio.play().catch(()=>{});
+    try{ if (audioConfig.tibok.startTime) currentAudio.currentTime = audioConfig.tibok.startTime; }catch(e){}
+    currentAudio.play().catch(()=>{ stopCurrentAudio(); });
   });
 }
 
 function playYesSound(){
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.yes.src);
-  currentAudio.play().catch(()=>{});
+  currentAudio.play().catch(()=>{ stopCurrentAudio(); });
 }
 
 function playRandomNoSound(){
   stopCurrentAudio();
+  if(!audioConfig.noTracks.length) return;
   const idx = Math.floor(Math.random() * audioConfig.noTracks.length);
   const track = audioConfig.noTracks[idx];
+  if(!track || !track.src) return;
   currentAudio = new Audio(track.src);
   currentAudio.addEventListener('loadedmetadata', () => {
     try{ currentAudio.currentTime = track.startTime || 0; }catch(e){}
-    currentAudio.play().catch(()=>{});
+    currentAudio.play().catch(()=>{ stopCurrentAudio(); });
   });
 }
 
@@ -254,13 +256,13 @@ const gifs = [
   "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif",
   "https://media1.tenor.com/m/d9PoZm99CTgAAAAd/sadcat-crying-cat.gif",
   "https://media1.tenor.com/m/hLuI_mGw57cAAAAd/sad-cat.gif",
-  "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif"
+  // removed duplicate entry
 ];
 
 const S = [
  {bg:"linear-gradient(135deg,#fff4f8,#ffdce9 52%,#eee0f7)",yes:"YES",msg:""},
  {bg:"linear-gradient(135deg,#fce8f0,#edc8dc 52%,#dfcbe9)",yes:"YES",msg:"Are you sure? 🥺"},
- {bg:"linear-gradient(135deg,#f3c2d7,#d9afd0 52%,#c1b3dc)",yes:"YES!",msg:"Please? =("},
+ {bg:"linear-gradient(135deg,#f3c2f7,#d9afd0 52%,#c1b3dc)",yes:"YES!",msg:"Please? =("},
  {bg:"linear-gradient(135deg,#dfa1bf,#bd8db2 52%,#9d8fbf)",yes:"YES!",msg:"Me is getting sad 😿"},
  {bg:"linear-gradient(135deg,#c680a7,#a06f98 52%,#716687)",yes:"YES",msg:"Nooo... please don't :< "},
  {bg:"linear-gradient(135deg,#a45f8c,#80577e 52%,#57536f)",yes:"YES",msg:"I really want you to say yes 🥹"},
@@ -321,7 +323,8 @@ function resetBase(bg){
 
 function apply(n){
   state = n;
-  const s = S[n];
+  // guard against out-of-range index
+  const s = S[n] || S[S.length - 1];
   resetBase(s.bg);
 
   const openingScreen = (n === 0);
@@ -443,7 +446,7 @@ function show12(){
   title.textContent = "IT'S A DATE! 💗";
   title.className = 'title final';
   title.style.top = '31%';
-  sub.textContent = 'DATE: ' + (date.value.trim() || '08/07/2026');
+  sub.textContent = 'DATE: ' + (date.value.trim() || '08/06/2026');
   sub.className = 'sub';
   sub.style.top = '43%';
   sub.style.fontSize = '20px';
@@ -453,7 +456,8 @@ function show12(){
 yes.addEventListener('click', show9);
 
 no.addEventListener('click', () => {
-  if(state < 8){
+  // guard using the S array length so we don't move past known states
+  if(state < S.length - 1){
     noPresses++;
     apply(state + 1);
     playRandomNoSound();
