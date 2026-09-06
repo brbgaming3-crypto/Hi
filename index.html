@@ -191,306 +191,286 @@ button,input{font:inherit}
 "use strict";
 
 const audioConfig = {
-  tibok: {
-    src: "https://files.catbox.moe/30ad4e.mp3",
-    startTime: 64 // Starts at 1:04
-  },
-  yes: {
-    src: "https://files.catbox.moe/il21b4.mp3"
-  },
+  tibok: { src: "https://files.catbox.moe/30ad4e.mp3", startTime: 64 },
+  yes: { src: "https://files.catbox.moe/il21b4.mp3" },
   noTracks: [
-    { name: "Track 1", src: "https://files.catbox.moe/qhc7z2.mp3", startTime: 0 },
-    { name: "Track 2", src: "https://files.catbox.moe/040v5p.mp3", startTime: 0 },
-    { name: "Track 3", src: "https://files.catbox.moe/ae7u4f.mp3", startTime: 0 },
-    { name: "Track 4", src: "https://files.catbox.moe/s2emrd.mp3", startTime: 31 }, // Starts at 0:31
-    { name: "Track 5", src: "https://files.catbox.moe/yz6m4s.mp3", startTime: 0 },
-    { name: "Track 6", src: "https://files.catbox.moe/s4ze47.mp3", startTime: 0 },
-    { name: "Track 7", src: "https://files.catbox.moe/knxo6y.mp3", startTime: 0 }
+    { src: "https://files.catbox.moe/qhc7z2.mp3", startTime: 0 },
+    { src: "https://files.catbox.moe/040v5p.mp3", startTime: 0 },
+    { src: "https://files.catbox.moe/ae7u4f.mp3", startTime: 0 },
+    { src: "https://files.catbox.moe/s2emrd.mp3", startTime: 0 },
+    { src: "https://files.catbox.moe/yz6m4s.mp3", startTime: 0 },
+    { src: "https://files.catbox.moe/s4ze47.mp3", startTime: 0 },
+    { src: "https://files.catbox.moe/knxo6y.mp3", startTime: 0 }
   ]
 };
 
 let currentAudio = null;
 
-// Stop previous track completely to prevent doubling sound
-function stopCurrentAudio() {
-  if (currentAudio) {
+function stopCurrentAudio(){
+  if(currentAudio){
     currentAudio.pause();
-    currentAudio.currentTime = 0;
+    try{ currentAudio.currentTime = 0; }catch(e){}
     currentAudio = null;
   }
 }
 
-// Play Section 1: Tibok (starts at 1:04)
-function playTibok() {
+function playTibok(){
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.tibok.src);
   currentAudio.addEventListener('loadedmetadata', () => {
-    currentAudio.currentTime = audioConfig.tibok.startTime;
-    currentAudio.play().catch(e => console.log("Audio play error:", e));
+    try{ currentAudio.currentTime = audioConfig.tibok.startTime; }catch(e){}
+    currentAudio.play().catch(()=>{});
   });
 }
 
-// Play Section 2: YES Reaction
-function playYesSound() {
+function playYesSound(){
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.yes.src);
-  currentAudio.play().catch(e => console.log("Audio play error:", e));
+  currentAudio.play().catch(()=>{});
 }
 
-// Play Section 3: NO Reaction (Random Track Selection)
-function playRandomNoSound() {
+function playRandomNoSound(){
   stopCurrentAudio();
-  
-  const randomIndex = Math.floor(Math.random() * audioConfig.noTracks.length);
-  const selectedTrack = audioConfig.noTracks[randomIndex];
-
-  currentAudio = new Audio(selectedTrack.src);
+  const idx = Math.floor(Math.random() * audioConfig.noTracks.length);
+  const track = audioConfig.noTracks[idx];
+  currentAudio = new Audio(track.src);
   currentAudio.addEventListener('loadedmetadata', () => {
-    currentAudio.currentTime = selectedTrack.startTime;
-    currentAudio.play().catch(error => console.error("Audio playback error:", error));
+    try{ currentAudio.currentTime = track.startTime || 0; }catch(e){}
+    currentAudio.play().catch(()=>{});
   });
 }
 
 const $ = id => document.getElementById(id);
-const app=$("app"), modal=$("modal"), face=$("face"), reactionGif=$("reactionGif");
-const title=$("title"), sub=$("sub"), buttons=$("buttons"), yes=$("yes"), no=$("no");
-const date=$("date"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
+const app = $("app"), modal = $("modal"), face = $("face"), reactionGif = $("reactionGif");
+const title = $("title"), sub = $("sub"), buttons = $("buttons"), yes = $("yes"), no = $("no");
+const date = $("date"), cont = $("cont"), hearts = $("hearts"), candies = $("candies"), gallery = $("gallery");
 
-let state=0, noPresses=0;
+let state = 0, noPresses = 0;
 const fallbackCat = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
 
-const gifs=[
+const gifs = [
   "https://media1.tenor.com/m/9EWwYOJnM_oAAAAd/cute-cats.gif",
   "https://media1.tenor.com/m/cxTH4XWKUVIAAAAd/cat.gif",
-  "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif",
-  "https://media1.tenor.com/m/d9PoZm99CTgAAAAd/sadcat-crying-cat.gif",
-  "https://media1.tenor.com/m/hLuI_mGw57cAAAAd/sad-cat.gif",
   "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif",
   "https://media1.tenor.com/m/d9PoZm99CTgAAAAd/sadcat-crying-cat.gif",
   "https://media1.tenor.com/m/hLuI_mGw57cAAAAd/sad-cat.gif",
   "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif"
 ];
 
-const S=[
+const S = [
  {bg:"linear-gradient(135deg,#fff4f8,#ffdce9 52%,#eee0f7)",yes:"YES",msg:""},
  {bg:"linear-gradient(135deg,#fce8f0,#edc8dc 52%,#dfcbe9)",yes:"YES",msg:"Are you sure? 🥺"},
  {bg:"linear-gradient(135deg,#f3c2d7,#d9afd0 52%,#c1b3dc)",yes:"YES!",msg:"Please? =("},
  {bg:"linear-gradient(135deg,#dfa1bf,#bd8db2 52%,#9d8fbf)",yes:"YES!",msg:"Me is getting sad 😿"},
  {bg:"linear-gradient(135deg,#c680a7,#a06f98 52%,#716687)",yes:"YES",msg:"Nooo... please don't :< "},
  {bg:"linear-gradient(135deg,#a45f8c,#80577e 52%,#57536f)",yes:"YES",msg:"I really want you to say yes 🥹"},
- {bg:"linear-gradient(135deg,#81486f,#624766 52%,#3f3c58)",yes:"YES",msg:"You're breaking my heart... 💔"},
+ {bg:"linear-gradient(135deg,#81486f,#624766 52%,#3f3c58)",yes:"YES!",msg:"You're breaking my heart... 💔"},
  {bg:"linear-gradient(135deg,#633957,#4b344e 52%,#302b40)",yes:"YES",msg:"Heart broken </3"},
  {bg:"linear-gradient(135deg,#47263f,#352336 52%,#211c2c)",yes:"YES",msg:"Please...? 🥹"}
 ];
 
 function makeHearts(){
-  hearts.innerHTML="";
+  hearts.innerHTML = "";
   for(let i=0;i<22;i++){
-    const h=document.createElement("span");
-    h.className="heart";
-    h.textContent=i%4===0?"♡":"♥";
-    h.style.left=(Math.random()*100)+"%";
-    h.style.animationDelay=(Math.random()*6)+"s";
-    h.style.animationDuration=(6+Math.random()*6)+"s";
+    const h = document.createElement('span');
+    h.className = 'heart';
+    h.textContent = i%4===0? '♡' : '♥';
+    h.style.left = (Math.random()*100) + '%';
+    h.style.animationDelay = (Math.random()*6) + 's';
+    h.style.animationDuration = (6 + Math.random()*6) + 's';
     hearts.appendChild(h);
   }
 }
 
 function makeCandies(){
-  candies.innerHTML="";
+  candies.innerHTML = '';
   ["♥","🧋","😼","🧁","♥"].forEach((symbol,j)=>{
     for(let i=0;i<2;i++){
-      const c=document.createElement("span");
-      c.className="candy";
-      c.textContent=symbol;
-      c.style.left=(8+j*18+i*4)+"%";
-      c.style.top=(20+i*55)+"%";
-      c.style.animationDelay=(j*.35+i)+"s";
+      const c = document.createElement('span');
+      c.className = 'candy';
+      c.textContent = symbol;
+      c.style.left = (8 + j*18 + i*4) + '%';
+      c.style.top = (20 + i*55) + '%';
+      c.style.animationDelay = (j*0.35 + i) + 's';
       candies.appendChild(c);
     }
   });
 }
 
 function safeImage(url){
-  reactionGif.onerror=function(){
-    reactionGif.onerror=null;
-    reactionGif.src=fallbackCat;
-  };
-  reactionGif.src=url;
+  reactionGif.onerror = function(){ reactionGif.onerror = null; reactionGif.src = fallbackCat; };
+  reactionGif.src = url;
 }
 
 function resetBase(bg){
-  app.style.background=bg;
-  title.className="title screen-breathe";
-  sub.className="sub hidden";
-  buttons.className="buttons";
-  date.className="date hidden";
-  cont.className="continue hidden";
-  face.className="face";
-  title.style.cssText="";
-  sub.style.cssText="";
-  yes.style.cssText="";
-  no.style.cssText="";
-  buttons.style.bottom="17%";
-  candies.style.opacity="0";
-  gallery.style.display="none";
+  app.style.background = bg;
+  title.className = 'title screen-breathe';
+  sub.className = 'sub hidden';
+  buttons.className = 'buttons';
+  date.className = 'date hidden';
+  cont.className = 'continue hidden';
+  face.className = 'face';
+  title.style.cssText = '';
+  sub.style.cssText = '';
+  yes.style.cssText = '';
+  no.style.cssText = '';
+  buttons.style.bottom = '17%';
+  candies.style.opacity = '0';
+  gallery.style.display = 'none';
 }
 
 function apply(n){
-  state=n;
-  const s=S[n];
+  state = n;
+  const s = S[n];
   resetBase(s.bg);
 
-  const openingScreen = (n===0);
-  gallery.style.display=openingScreen?"block":"none";
-  face.style.display=openingScreen?"none":"grid";
+  const openingScreen = (n === 0);
+  gallery.style.display = openingScreen ? 'block' : 'none';
+  face.style.display = openingScreen ? 'none' : 'grid';
 
-  safeImage(gifs[Math.min(n,gifs.length-1)]);
-  face.style.width=(n<4?84:n<7?78:72)+"px";
-  face.style.height=face.style.width;
-  face.style.top="38%";
+  safeImage(gifs[Math.min(n, gifs.length - 1)]);
+  face.style.width = (n < 4 ? 84 : n < 7 ? 78 : 72) + 'px';
+  face.style.height = face.style.width;
+  face.style.top = '38%';
 
-  title.textContent=n>=7?"will you go out with me?":"Will you go out with me?";
-  title.style.color=n<4?"#642e4e":"#fff";
-  title.style.fontSize=n>=7?"34px":n===3?"34px":"34px";
+  title.textContent = n >= 7 ? 'will you go out with me?' : 'Will you go out with me?';
+  title.style.color = n < 4 ? '#642e4e' : '#fff';
 
   if(s.msg){
-    sub.textContent=s.msg;
-    sub.className="sub";
-    sub.style.color=n<4?"#7a3a5b":"rgba(255,255,255,.94)";
-    sub.style.top=n===7?"55%":"55%";
-    if(n>=6) sub.style.textShadow="0 0 14px rgba(255,84,125,.8)";
+    sub.textContent = s.msg;
+    sub.className = 'sub';
+    sub.style.color = n < 4 ? '#7a3a5b' : 'rgba(255,255,255,.94)';
+    sub.style.top = '55%';
+    if(n >= 6) sub.style.textShadow = '0 0 14px rgba(255,84,125,.8)';
   }
 
-  yes.textContent=s.yes;
+  yes.textContent = s.yes;
 
-  const yesScale=1+(noPresses*0.12);
-  yes.style.fontSize=Math.min(31,20+noPresses*1.15)+"px";
-  yes.style.padding=(13+noPresses*0.5)+"px "+(31+noPresses*1.25)+"px";
-  yes.style.transform="scale("+Math.min(1.28,yesScale)+")";
-  yes.style.zIndex="11";
+  const yesScale = 1 + (noPresses * 0.12);
+  yes.style.fontSize = Math.min(31, 20 + noPresses * 1.15) + 'px';
+  yes.style.padding = (13 + noPresses * 0.5) + 'px ' + (31 + noPresses * 1.25) + 'px';
+  yes.style.transform = 'scale(' + Math.min(1.28, yesScale) + ')';
+  yes.style.zIndex = '11';
 
-  const shrink=Math.pow(0.62,noPresses);
-  const width=Math.max(10,48*shrink);
-  const height=Math.max(10,38*shrink);
-  const fs=Math.max(2.2,16*shrink);
+  const shrink = Math.pow(0.62, noPresses);
+  const width = Math.max(10, 48 * shrink);
+  const height = Math.max(10, 38 * shrink);
+  const fs = Math.max(2.2, 16 * shrink);
 
-  no.style.width=width+"px";
-  no.style.height=height+"px";
-  no.style.minWidth="0";
-  no.style.padding="0";
-  no.style.fontSize=fs+"px";
-  no.style.lineHeight="1";
-  no.style.opacity=Math.max(.08,1-noPresses*.105);
-  no.style.borderWidth=noPresses>=6?"0":"1px";
+  no.style.width = width + 'px';
+  no.style.height = height + 'px';
+  no.style.minWidth = '0';
+  no.style.padding = '0';
+  no.style.fontSize = fs + 'px';
+  no.style.lineHeight = '1';
+  no.style.opacity = Math.max(.08, 1 - noPresses * .105);
+  no.style.borderWidth = noPresses >= 6 ? '0' : '1px';
 
-  buttons.style.gap=Math.max(3,16-noPresses*1.5)+"px";
-  buttons.style.bottom=noPresses>=6?"16%":"17%";
+  buttons.style.gap = Math.max(3, 16 - noPresses * 1.5) + 'px';
+  buttons.style.bottom = noPresses >= 6 ? '16%' : '17%';
 
-  hearts.style.opacity=n===0?".10":n<4?".28":n<7?".45":".62";
-  candies.style.opacity=n>=4?".35":"0";
+  hearts.style.opacity = n === 0 ? '.10' : n < 4 ? '.28' : n < 7 ? '.45' : '.62';
+  candies.style.opacity = n >= 4 ? '.35' : '0';
 
-  if(!openingScreen) face.style.display="grid";
+  if(!openingScreen) face.style.display = 'grid';
 }
 
 function baseFinal(bg){
   resetBase(bg);
-  gallery.style.display="none";
-  face.className="face hidden";
-  buttons.className="buttons hidden";
-  sub.className="sub hidden";
-  hearts.style.opacity=".75";
-  candies.style.opacity=".45";
+  gallery.style.display = 'none';
+  face.className = 'face hidden';
+  buttons.className = 'buttons hidden';
+  sub.className = 'sub hidden';
+  hearts.style.opacity = '.75';
+  candies.style.opacity = '.45';
   makeCandies();
 }
 
 function clearPostCat(){
-  document.querySelectorAll(".postcat").forEach(x=>x.remove());
+  document.querySelectorAll('.postcat').forEach(x=>x.remove());
 }
 
 function show9(){
-  state=9;
+  state = 9;
   playYesSound();
   clearPostCat();
-  baseFinal("linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)");
-  title.innerHTML='YAY!<div class="yes-sub"> hihi 🥰</div>';
-  title.className="title yay-title";
-  title.style.top="21%";
-  title.style.fontSize="78px";
+  baseFinal('linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)');
+  title.innerHTML = 'YAY!<div class="yes-sub"> hihi 🥰</div>';
+  title.className = 'title yay-title';
+  title.style.top = '21%';
+  title.style.fontSize = '78px';
 
-  const cat=document.createElement("img");
-  cat.className="postcat";
-  cat.alt="happy cat";
-  cat.onerror=function(){this.onerror=null;this.src=fallbackCat};
-  cat.src="https://media.tenor.com/CnP64S7lszwAAAAj/meme-cat-cat-meme.gif";
+  const cat = document.createElement('img');
+  cat.className = 'postcat';
+  cat.alt = 'happy cat';
+  cat.onerror = function(){ this.onerror = null; this.src = fallbackCat }; 
+  cat.src = 'https://media.tenor.com/CnP64S7lszwAAAAj/meme-cat-cat-meme.gif';
   modal.appendChild(cat);
 
-  cont.textContent="PRESS TO CONTINUE";
-  cont.className="continue";
-  cont.style.bottom="9%";
+  cont.textContent = 'PRESS TO CONTINUE';
+  cont.className = 'continue';
+  cont.style.bottom = '9%';
 }
 
 function show10(){
-  state=10;
+  state = 10;
   clearPostCat();
-  baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
-  title.textContent="PICK A DATE";
-  title.className="title";
-  title.style.top="17%";
-  title.style.fontSize="31px";
-  title.style.color="#fff";
-  title.style.textShadow="0 5px 20px rgba(86,52,91,.22)";
+  baseFinal('linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)');
+  title.textContent = 'PICK A DATE';
+  title.className = 'title';
+  title.style.top = '17%';
+  title.style.fontSize = '31px';
+  title.style.color = '#fff';
+  title.style.textShadow = '0 5px 20px rgba(86,52,91,.22)';
 
-  sub.textContent="Choose da day 🥰";
-  sub.className="sub";
-  sub.style.top="29%";
-  sub.style.color="rgba(255,255,255,.94)";
+  sub.textContent = 'Choose da day 🥰';
+  sub.className = 'sub';
+  sub.style.top = '29%';
+  sub.style.color = 'rgba(255,255,255,.94)';
 
-  date.className="date";
-  date.style.top="46%";
+  date.className = 'date';
+  date.style.top = '46%';
 
-  cont.textContent="CONTINUE →";
-  cont.className="continue";
-  cont.style.bottom="13%";
+  cont.textContent = 'CONTINUE →';
+  cont.className = 'continue';
+  cont.style.bottom = '13%';
 }
 
 function show12(){
-  state=12;
-  baseFinal("linear-gradient(135deg,#eeb5d7,#c5b5e7 50%,#91b9e8)");
-  [...hearts.children].forEach(h=>h.style.animationDuration="2.8s");
-  title.textContent="IT'S A DATE! 💗";
-  title.className="title final";
-  title.style.top="31%";
-  sub.textContent="DATE: "+(date.value.trim()||"08/07/2026");
-  sub.className="sub";
-  sub.style.top="43%";
-  sub.style.fontSize="20px";
-  sub.style.fontWeight="800";
+  state = 12;
+  baseFinal('linear-gradient(135deg,#eeb5d7,#c5b5e7 50%,#91b9e8)');
+  [...hearts.children].forEach(h=>h.style.animationDuration = '2.8s');
+  title.textContent = "IT'S A DATE! 💗";
+  title.className = 'title final';
+  title.style.top = '31%';
+  sub.textContent = 'DATE: ' + (date.value.trim() || '08/07/2026');
+  sub.className = 'sub';
+  sub.style.top = '43%';
+  sub.style.fontSize = '20px';
+  sub.style.fontWeight = '800';
 }
 
-yes.addEventListener("click", show9);
+yes.addEventListener('click', show9);
 
-no.addEventListener("click", () => {
-  if (state < 8) {
+no.addEventListener('click', () => {
+  if(state < 8){
     noPresses++;
     apply(state + 1);
     playRandomNoSound();
   }
 });
 
-cont.addEventListener("click", () => {
-  if(state===9) show10();
-  else if(state===10){
-    if(!date.value.trim()) date.value="08/06/2026";
+cont.addEventListener('click', () => {
+  if(state === 9) show10();
+  else if(state === 10){
+    if(!date.value.trim()) date.value = '08/06/2026';
     show12();
   }
 });
 
-// Autoplay trigger for Tibok on first interaction anywhere
-document.addEventListener("pointerdown", (e) => {
-  if (state === 0 && !currentAudio) {
-    playTibok();
-  }
+// Start tibok on first user interaction (one-time)
+document.addEventListener('pointerdown', () => {
+  if(state === 0 && !currentAudio) playTibok();
 }, { once: true });
 
 makeHearts();
