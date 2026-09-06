@@ -37,6 +37,13 @@ button,input{font:inherit}
   text-align:center;
   padding:20px;
   touch-action:manipulation;
+  opacity:1;
+  transition:opacity 0.3s ease;
+}
+
+#intro-overlay.hidden{
+  opacity:0;
+  pointer-events:none;
 }
 
 #intro-overlay h1{
@@ -503,7 +510,14 @@ let audioCtx = null;
 
 const startTimes = {
   "intro.mp3":64,
+  "no1.mp3":0,
+  "no2.mp3":0,
+  "no3.mp3":0,
   "no4.mp3":31,
+  "no5.mp3":0,
+  "no6.mp3":0,
+  "no7.mp3":0,
+  "no8.mp3":0,
   "no9.mp3":41,
   "date.mp3":10,
   "date1.mp3":27,
@@ -585,12 +599,6 @@ function playMp3(filename, loopMode=false){
 
   audio.play().catch(error => {
 
-    /*
-      IMPORTANT:
-      Missing audio must NEVER break
-      the interactive page.
-    */
-
     console.warn(
       "Audio unavailable:",
       filename,
@@ -603,54 +611,43 @@ function playMp3(filename, loopMode=false){
 
 
 /* =========================
-   FIXED INTRO OVERLAY
+   INTRO OVERLAY - FIXED
 ========================= */
 
 async function openIntro(){
 
-  if(
-    !introOverlay ||
-    introOverlay.dataset.opened === "1"
-  ){
+  if(!introOverlay || introOverlay.dataset.opened === "1"){
     return;
   }
 
   introOverlay.dataset.opened = "1";
 
-  /*
-    The user gesture is still active here,
-    so browsers allow audio to be started.
-  */
   await ensureAudioContext();
 
-  /*
-    REMOVE THE OVERLAY FIRST.
-    This is the main fix.
-  */
-  introOverlay.remove();
+  /* Hide with fade transition */
+  introOverlay.classList.add("hidden");
 
-  /*
-    Audio is completely optional.
-    If intro.mp3 doesn't exist, the page
-    still works normally.
-  */
+  /* Remove from DOM after animation completes */
+  setTimeout(() => {
+    if(introOverlay.parentNode){
+      introOverlay.remove();
+    }
+  }, 300);
+
   playMp3("intro.mp3", true);
 
 }
 
-
-/*
-  pointerup works much more reliably on
-  Android/mobile browsers than relying only
-  on click.
-*/
-introOverlay.addEventListener(
-  "pointerup",
-  openIntro,
-  {once:true}
-);
-
-introOverlay.tabIndex = 0;
+/* Handle multiple input methods */
+if(introOverlay){
+  introOverlay.addEventListener("pointerup", openIntro, {once:true});
+  introOverlay.addEventListener("click", openIntro, {once:true});
+  introOverlay.addEventListener("touchend", openIntro, {once:true});
+  introOverlay.addEventListener("keydown", (e) => {
+    if(e.key === "Enter" || e.key === " ") openIntro();
+  }, {once:true});
+  introOverlay.tabIndex = 0;
+}
 
 
 /* =========================
@@ -1164,12 +1161,13 @@ no.addEventListener("click", (e) => {
   ensureAudioContext();
   if(state < 9){
     noPresses++;
+    
+    /* Play audio for each NO press */
+    const audioFile = "no" + noPresses + ".mp3";
+    playMp3(audioFile);
+    
     if(noPresses >= 9){
-      playMp3("no9.mp3");
       apply(9);
-    }else if(noPresses >= 4){
-      playMp3("no4.mp3");
-      apply(noPresses);
     }else{
       apply(noPresses);
     }
