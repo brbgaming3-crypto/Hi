@@ -991,525 +991,242 @@ function clearPostCat(){
 
 
 /* =========================
+   ANIMATION HELPERS
+========================= */
+
+function spawnHearts(){
+  const heartsToAdd = hearts.querySelectorAll(".heart").length;
+  for(let i=0; i<8-heartsToAdd; i++){
+    const heart = document.createElement("div");
+    heart.className = "heart";
+    heart.textContent = "❤️";
+    heart.style.left = Math.random()*100 + "%";
+    heart.style.animationDuration = (2+Math.random()*1.5) + "s";
+    heart.style.animationDelay = Math.random()*0.5 + "s";
+    hearts.appendChild(heart);
+  }
+}
+
+function spawnCandies(){
+  const candiesToAdd = candies.querySelectorAll(".candy").length;
+  for(let i=0; i<6-candiesToAdd; i++){
+    const candy = document.createElement("div");
+    candy.className = "candy";
+    candy.textContent = "🍭";
+    candy.style.left = Math.random()*100 + "%";
+    candy.style.top = (50+Math.random()*30) + "%";
+    candy.style.animationDelay = i*0.2 + "s";
+    candies.appendChild(candy);
+  }
+}
+
+function clearHearts(){
+  hearts.innerHTML = "";
+}
+
+function clearCandies(){
+  candies.innerHTML = "";
+}
+
+
+/* =========================
    YES SCREEN
 ========================= */
 
 function show9(){
 
   state = 9;
+  
+  baseFinal("linear-gradient(135deg,#ff5c82,#c9204e)");
 
-  playMp3("yay.mp3",false);
+  title.className = "title yay-title";
+  title.textContent = "Yay! 🎉";
+  title.style.color = "#fff";
+  title.style.fontSize = "48px";
+  title.style.top = "15%";
 
-  clearPostCat();
+  sub.className = "yes-sub";
+  sub.textContent = "I'm so happy! 💕";
+  sub.style.top = "50%";
 
-  baseFinal(
-    "linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)"
-  );
+  clearHearts();
+  clearCandies();
+  spawnHearts();
+  spawnCandies();
 
-  title.innerHTML =
-    'YAY!<div class="yes-sub">hihihi 🥳🎉🎊</div>';
+  playMp3("yay.mp3");
 
-  title.className =
-    "title yay-title";
-
-  title.style.top = "21%";
-
-  title.style.fontSize = "78px";
-
-
-  const cat =
-    document.createElement("img");
-
-  cat.className = "postcat";
-
-  cat.alt = "happy cat";
-
-  cat.src =
-    "https://media.tenor.com/CnP64S7lszwAAAAj/meme-cat-cat-meme.gif";
-
-  cat.onerror = function(){
-
-    this.onerror = null;
-
-    this.src = fallbackCat;
-
-  };
-
-  modal.appendChild(cat);
-
-
-  cont.textContent =
-    "PRESS TO CONTINUE";
-
-  cont.className =
-    "continue";
-
-  cont.style.bottom =
-    "9%";
 }
 
 
 /* =========================
-   DATE SCREEN
+   DATE SELECTION
 ========================= */
 
-function show10(){
+function showDateScreen(){
 
   state = 10;
 
-  playMp3("date.mp3",true);
+  baseFinal("linear-gradient(135deg,#ff6fb4,#da3a6c)");
 
-  clearPostCat();
+  title.textContent = "Pick a date! 📅";
+  title.style.color = "#fff";
+  title.style.fontSize = "32px";
+  title.style.top = "20%";
 
-  baseFinal(
-    "linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)"
-  );
+  date.className = "date";
+  date.value = "";
+  date.focus();
 
-  title.textContent =
-    "PICK A DATE";
+  clearHearts();
+  spawnHearts();
 
-  title.className =
-    "title";
-
-  title.style.top =
-    "17%";
-
-  title.style.fontSize =
-    "31px";
-
-  title.style.color =
-    "#fff";
-
-  sub.textContent =
-    "Choose da day 🥰";
-
-  sub.className =
-    "sub";
-
-  sub.style.top =
-    "29%";
-
-  sub.style.color =
-    "rgba(255,255,255,.94)";
-
-  date.className =
-    "date";
-
-  date.style.top =
-    "46%";
-
-  cont.textContent =
-    "CONTINUE →";
-
-  cont.className =
-    "continue";
-
-  cont.style.bottom =
-    "13%";
+  playMp3("date.mp3");
 }
 
 
 /* =========================
-   ACTIVITY SCREEN
+   CHOICES SELECTION
 ========================= */
 
-function show11(){
+function showChoices(){
 
   state = 11;
 
-  playMp3("date1.mp3", true);
+  baseFinal("linear-gradient(135deg,#ff7cc4,#e63b6c)");
 
-  baseFinal(
-    "linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)"
-  );
-
-  title.textContent = "WHAT SHALL WE DO?";
-  title.className = "title";
-  title.style.top = "12%";
-  title.style.fontSize = "26px";
+  title.textContent = "Where to? 🗺️";
   title.style.color = "#fff";
+  title.style.fontSize = "32px";
+  title.style.top = "8%";
 
   choicesContainer.className = "choices-container";
   choicesContainer.innerHTML = "";
+  selectedChoices.clear();
 
-  choicesList.forEach(item => {
-
-    const chip = document.createElement("div");
-
-    chip.className =
-      "choice-chip" +
-      (selectedChoices.has(item) ? " selected" : "");
-
-    chip.textContent = item;
-
-    chip.addEventListener("click", () => {
-
-      if (selectedChoices.has(item)) {
-
-        selectedChoices.delete(item);
-        chip.classList.remove("selected");
-
-        if (item === "others") {
-
-          const inp = $("otherTextInput");
-
-          if (inp) inp.remove();
-
-        }
-
-      } else {
-
-        selectedChoices.add(item);
-        chip.classList.add("selected");
-
-        if (item === "others") {
-
-          /*
-           * Prevent duplicate Others input
-           */
-          if (!$("otherTextInput")) {
-
-            const inp = document.createElement("input");
-
-            inp.id = "otherTextInput";
-            inp.placeholder =
-              "Type your custom place/activity...";
-            inp.className = "other-input";
-
-            choicesContainer.appendChild(inp);
-
-          }
-
-        }
-
+  choicesList.forEach(choice => {
+    const chip = document.createElement("button");
+    chip.className = "choice-chip";
+    chip.textContent = choice;
+    chip.addEventListener("click", (e) => {
+      e.preventDefault();
+      chip.classList.toggle("selected");
+      if(chip.classList.contains("selected")){
+        selectedChoices.add(choice);
+      }else{
+        selectedChoices.delete(choice);
       }
-
     });
-
     choicesContainer.appendChild(chip);
-
   });
 
-  cont.textContent = "FINISH 💕";
-  cont.className = "continue";
-  cont.style.bottom = "8%";
+  const otherInput = document.createElement("input");
+  otherInput.type = "text";
+  otherInput.className = "other-input";
+  otherInput.placeholder = "Or type your own idea...";
+  otherInput.maxLength = "50";
+  choicesContainer.appendChild(otherInput);
 
+  cont.className = "continue";
+  cont.textContent = "CONTINUE";
+  cont.onclick = () => {
+    const otherValue = otherInput.value.trim();
+    if(selectedChoices.size === 0 && !otherValue){
+      alert("Please select a place or type one!");
+      return;
+    }
+    if(otherValue){
+      selectedChoices.add(otherValue);
+    }
+    submitProposal();
+  };
+
+  clearHearts();
+  spawnHearts();
+  playMp3("date1.mp3");
 }
 
 
 /* =========================
-   SEND DATA TO EMAIL
+   BUTTON HANDLERS
 ========================= */
 
-function sendDataToEmail(
-  chosenDate,
-  choicesArray,
-  customOther
-){
-
-  if (
-    !WEB3FORMS_ACCESS_KEY ||
-    WEB3FORMS_ACCESS_KEY === "YOUR_ACCESS_KEY_HERE"
-  ){
-
-    console.warn(
-      "Web3Forms Access Key is missing!"
-    );
-
-    return;
-
+yes.addEventListener("click", (e) => {
+  e.preventDefault();
+  ensureAudioContext();
+  if(state === 0){
+    showDateScreen();
   }
+});
 
-  const formData = new FormData();
-
-  formData.append(
-    "access_key",
-    WEB3FORMS_ACCESS_KEY
-  );
-
-  formData.append(
-    "subject",
-    "💖 Someone answered your invitation!"
-  );
-
-  formData.append(
-    "Date Selected",
-    chosenDate
-  );
-
-  formData.append(
-    "Activities Picked",
-    choicesArray.join(", ") ||
-    "None selected"
-  );
-
-  if (customOther) {
-
-    formData.append(
-      "Custom 'Others' Text",
-      customOther
-    );
-
+no.addEventListener("click", (e) => {
+  e.preventDefault();
+  ensureAudioContext();
+  if(state < 9){
+    noPresses++;
+    if(noPresses >= 9){
+      playMp3("no9.mp3");
+      apply(9);
+    }else if(noPresses >= 4){
+      playMp3("no4.mp3");
+      apply(noPresses);
+    }else{
+      apply(noPresses);
+    }
   }
+});
 
-  fetch(
-    "https://api.web3forms.com/submit",
-    {
+date.addEventListener("keydown", (e) => {
+  if(e.key === "Enter"){
+    const dateValue = date.value.trim();
+    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(dateValue)){
+      alert("Please enter date in MM/DD/YYYY format");
+      return;
+    }
+    showChoices();
+  }
+});
+
+
+/* =========================
+   FORM SUBMISSION
+========================= */
+
+async function submitProposal(){
+  try{
+    const choices = Array.from(selectedChoices).join(", ");
+    const dateValue = date.value;
+
+    const formData = new FormData();
+    formData.append("access_key", WEB3FORMS_ACCESS_KEY);
+    formData.append("subject", "Someone wants to go out with you! 💕");
+    formData.append("from_name", "Secret Admirer");
+    formData.append("date", dateValue);
+    formData.append("places", choices);
+
+    const response = await fetch("https://api.web3forms.com/submit", {
       method: "POST",
       body: formData
+    });
+
+    if(response.ok){
+      show9();
+    }else{
+      console.error("Submission failed");
+      show9();
     }
-  )
-  .then(response => {
-
-    if (!response.ok) {
-      throw new Error(
-        "Web3Forms request failed"
-      );
-    }
-
-    return response.json();
-
-  })
-  .then(data => {
-
-    console.log(
-      "Response submitted:",
-      data
-    );
-
-  })
-  .catch(error => {
-
-    console.error(
-      "Error submitting response:",
-      error
-    );
-
-  });
-
-}
-
-
-/* =========================
-   FINAL SCREEN
-========================= */
-
-function show12(){
-
-  state = 12;
-
-  const finalDate =
-    date.value.trim() || "09/06/2026";
-
-  const finalChoices =
-    Array.from(selectedChoices);
-
-  const otherInput =
-    $("otherTextInput");
-
-  const customText =
-    otherInput
-      ? otherInput.value.trim()
-      : "";
-
-  /*
-   * Send the answer before showing
-   * the final screen.
-   */
-  sendDataToEmail(
-    finalDate,
-    finalChoices,
-    customText
-  );
-
-  baseFinal(
-    "linear-gradient(135deg,#eeb5d7,#c5b5e7 50%,#91b9e8)"
-  );
-
-  title.textContent =
-    "IT'S A DATE! 💗";
-
-  title.className =
-    "title final";
-
-  title.style.top =
-    "31%";
-
-  sub.textContent =
-    "DATE: " + finalDate;
-
-  sub.className =
-    "sub";
-
-  sub.style.top =
-    "43%";
-
-  sub.style.fontSize =
-    "20px";
-
-  sub.style.fontWeight =
-    "800";
-
-}
-
-
-/* =========================
-   YES BUTTON
-========================= */
-
-yes.addEventListener(
-  "click",
-  () => {
-
+  }catch(error){
+    console.error("Error:", error);
     show9();
-
   }
-);
+}
 
 
 /* =========================
-   NO BUTTON
-========================= */
-
-no.addEventListener(
-  "click",
-  () => {
-
-    if (state < 8) {
-
-      noPresses++;
-
-      const randomNum =
-        Math.floor(Math.random() * 9) + 1;
-
-      playMp3(
-        `no${randomNum}.mp3`,
-        false
-      );
-
-      apply(state + 1);
-
-    }
-
-  }
-);
-
-
-/* =========================
-   CONTINUE BUTTON
-========================= */
-
-cont.addEventListener(
-  "click",
-  () => {
-
-    /*
-     * YES screen
-     * ↓
-     * DATE screen
-     */
-    if (state === 9) {
-
-      show10();
-
-      return;
-
-    }
-
-
-    /*
-     * DATE screen
-     * ↓
-     * ACTIVITY screen
-     */
-    if (state === 10) {
-
-      /*
-       * Default date if nothing
-       * was entered.
-       */
-      if (!date.value.trim()) {
-
-        date.value = "09/07/2026";
-
-      }
-
-      show11();
-
-      return;
-
-    }
-
-
-    /*
-     * ACTIVITY screen
-     * ↓
-     * FINAL SCREEN
-     */
-    if (state === 11) {
-
-      show12();
-
-      return;
-
-    }
-
-  }
-);
-
-
-/* =========================
-   DATE INPUT
-========================= */
-
-/*
- * Automatically format:
- *
- * 09072026
- *
- * into:
- *
- * 09/07/2026
- */
-date.addEventListener(
-  "input",
-  () => {
-
-    let value =
-      date.value.replace(/\D/g, "");
-
-    if (value.length > 8) {
-      value = value.slice(0, 8);
-    }
-
-    if (value.length >= 5) {
-
-      value =
-        value.slice(0,2) +
-        "/" +
-        value.slice(2,4) +
-        "/" +
-        value.slice(4);
-
-    }
-
-    else if (value.length >= 3) {
-
-      value =
-        value.slice(0,2) +
-        "/" +
-        value.slice(2);
-
-    }
-
-    date.value = value;
-
-  }
-);
-
-
-/* =========================
-   INITIALIZE PAGE
+   INITIALIZE
 ========================= */
 
 apply(0);
+</script>
+</body>
+</html>
