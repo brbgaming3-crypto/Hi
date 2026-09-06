@@ -1,0 +1,286 @@
+const date=$("date"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
+
+let state=0, noPresses=0;
+
+/* Audio: each screen gets its own cue. Exact commercial songs are not embedded;
+   these original Web-Audio cues are designed to evoke the requested moods while
+   keeping the HTML self-contained and avoiding broken/missing audio URLs. */
+let audioCtx=null,audioNodes=[],audioTimer=null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function stopAudio(){
+  if(audioTimer){clearTimeout(audioTimer);audioTimer=null}
+  audioNodes.forEach(n=>{try{n.stop()}catch(e){}}); audioNodes=[];
+}
+function note(freq,dur=.22,type='triangle',gain=.035,when=0){
+  if(!audioCtx)return; const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  const t=audioCtx.currentTime+when; o.type=type;o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.025);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(audioCtx.destination);
+  o.start(t);o.stop(t+dur+.03);audioNodes.push(o);
+}
+function loopCue(kind){
+  ensureAudio();stopAudio();
+  const sets={
+    cute:[523.25,659.25,783.99,659.25,587.33,698.46],
+    sad:[392,349.23,329.63,293.66,329.63,261.63],
+    hapi:[523.25,659.25,783.99,659.25,783.99,1046.5],
+    yay:[659.25,783.99,1046.5,783.99,1174.66,1046.5]
+  };
+  const notes=sets[kind]||sets.cute; let i=0;
+  const beat=()=>{
+    const f=notes[i%notes.length];
+    note(f,kind==='sad'?.55:.20,kind==='sad'?'sine':kind==='hapi'?'square':'triangle',kind==='sad'?.028:.032);
+    if(kind!=='sad') note(f/2,.24,'sine',.010,.035);
+    i++;audioTimer=setTimeout(beat,kind==='sad'?620:190);
+  }; beat();
+}
+function playForState(n){
+  if(n===0) loopCue('cute');
+  else if(n>=1&&n<=8) loopCue('sad');
+  else if(n===9) loopCue('hapi');
+  else loopCue('cute');
+}
+document.addEventListener('pointerdown',()=>ensureAudio(),{once:true});
+
+const fallbackCat =
+  "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
+
+const gifs=[
+  "https://media1.tenor.com/m/9EWwYOJnM_oAAAAd/cute-cats.gif",
+  "https://media1.tenor.com/m/cxTH4XWKUVIAAAAd/cat.gif",
+  "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif",
+  "https://media1.tenor.com/m/d9PoZm99CTgAAAAd/sadcat-crying-cat.gif",
+  "https://media1.tenor.com/m/hLuI_mGw57cAAAAd/sad-cat.gif",
+  "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif",
+  "https://media1.tenor.com/m/d9PoZm99CTgAAAAd/sadcat-crying-cat.gif",
+  "https://media1.tenor.com/m/hLuI_mGw57cAAAAd/sad-cat.gif",
+  "https://media1.tenor.com/m/wk8ueqUDJBsAAAAd/cat-cry-cute.gif"
+];
+
+const S=[
+ {bg:"linear-gradient(135deg,#fff4f8,#ffdce9 52%,#eee0f7)",yes:"YES",msg:""},
+ {bg:"linear-gradient(135deg,#fce8f0,#edc8dc 52%,#dfcbe9)",yes:"YES",msg:"Are you sure? 🥺"},
+ {bg:"linear-gradient(135deg,#f3c2d7,#d9afd0 52%,#c1b3dc)",yes:"YES!",msg:"Please? =("},
+ {bg:"linear-gradient(135deg,#dfa1bf,#bd8db2 52%,#9d8fbf)",yes:"YES!",msg:"I really want you to say yes 🥹"},
+ {bg:"linear-gradient(135deg,#c680a7,#a06f98 52%,#716687)",yes:"YES",msg:"Nooo... please don't :< "},
+ {bg:"linear-gradient(135deg,#a45f8c,#80577e 52%,#57536f)",yes:"YES",msg:"My heart is getting sad... 🥺"},
+ {bg:"linear-gradient(135deg,#81486f,#624766 52%,#3f3c58)",yes:"YES",msg:"You're breaking my heart... 💔"},
+ {bg:"linear-gradient(135deg,#633957,#4b344e 52%,#302b40)",yes:"YES",msg:"Heart broken </3"},
+ {bg:"linear-gradient(135deg,#47263f,#352336 52%,#211c2c)",yes:"YES",msg:"Please... one more chance? 🥹"}
+];
+
+function makeHearts(){
+  hearts.innerHTML="";
+  for(let i=0;i<22;i++){
+    const h=document.createElement("span");
+    h.className="heart";
+    h.textContent=i%4===0?"♡":"♥";
+    h.style.left=(Math.random()*100)+"%";
+    h.style.animationDelay=(Math.random()*6)+"s";
+    h.style.animationDuration=(6+Math.random()*6)+"s";
+    hearts.appendChild(h);
+  }
+}
+
+function makeCandies(){
+  candies.innerHTML="";
+  ["♥","🧋","😼","🧁","♥"].forEach((symbol,j)=>{
+    for(let i=0;i<2;i++){
+      const c=document.createElement("span");
+      c.className="candy";
+      c.textContent=symbol;
+      c.style.left=(8+j*18+i*4)+"%";
+      c.style.top=(20+i*55)+"%";
+      c.style.animationDelay=(j*.35+i)+"s";
+      candies.appendChild(c);
+    }
+  });
+}
+
+function safeImage(url){
+  reactionGif.onerror=function(){
+    reactionGif.onerror=null;
+    reactionGif.src=fallbackCat;
+  };
+  reactionGif.src=url;
+}
+
+function resetBase(bg){
+  app.style.background=bg;
+  title.className="title screen-breathe";
+  sub.className="sub hidden";
+  buttons.className="buttons";
+  date.className="date hidden";
+  cont.className="continue hidden";
+  face.className="face";
+  title.style.cssText="";
+  sub.style.cssText="";
+  yes.style.cssText="";
+  no.style.cssText="";
+  buttons.style.bottom="17%";
+  candies.style.opacity="0";
+  gallery.style.display="none";
+}
+
+function apply(n){
+  state=n;
+  const s=S[n];
+  resetBase(s.bg);
+
+  // The six opening cats are only for the first screen. Once NO is clicked,
+  // hide the opening scatter and show the reaction cat for that NO stage.
+  const openingScreen = (n===0);
+  gallery.style.display=openingScreen?"block":"none";
+  face.style.display=openingScreen?"none":"grid";
+
+  safeImage(gifs[Math.min(n,gifs.length-1)]);
+  face.style.width=(n<4?84:n<7?78:72)+"px";
+  face.style.height=face.style.width;
+  face.style.top="38%";
+
+  title.textContent=n>=7?"will you go out with me?":"Will you go out with me?";
+  title.style.color=n<4?"#642e4e":"#fff";
+  title.style.fontSize=n>=7?"34px":n===3?"34px":"34px";
+
+  if(s.msg){
+    sub.textContent=s.msg;
+    sub.className="sub";
+    sub.style.color=n<4?"#7a3a5b":"rgba(255,255,255,.94)";
+    sub.style.top=n===7?"55%":"55%";
+    if(n>=6) sub.style.textShadow="0 0 14px rgba(255,84,125,.8)";
+  }
+
+  yes.textContent=s.yes;
+
+  /* YES keeps growing. The growth is capped only at the modal width,
+     not by the old percentage/min-width interaction. */
+  const yesScale=1+(noPresses*0.12);
+  yes.style.fontSize=Math.min(31,20+noPresses*1.15)+"px";
+  yes.style.padding=(13+noPresses*0.5)+"px "+(31+noPresses*1.25)+"px";
+  yes.style.transform="scale("+Math.min(1.28,yesScale)+")";
+  yes.style.zIndex="11";
+
+  /* NO genuinely shrinks every click, including its box. */
+  const shrink=Math.pow(0.62,noPresses);
+  const width=Math.max(10,48*shrink);
+  const height=Math.max(10,38*shrink);
+  const fs=Math.max(2.2,16*shrink);
+
+  no.style.width=width+"px";
+  no.style.height=height+"px";
+  no.style.minWidth="0";
+  no.style.padding="0";
+  no.style.fontSize=fs+"px";
+  no.style.lineHeight="1";
+  no.style.opacity=Math.max(.08,1-noPresses*.105);
+  no.style.borderWidth=noPresses>=6?"0":"1px";
+
+  /* Later, the YES visual dominates without removing NO. */
+  buttons.style.gap=Math.max(3,16-noPresses*1.5)+"px";
+  buttons.style.bottom=noPresses>=6?"16%":"17%";
+
+  hearts.style.opacity=n===0?".10":n<4?".28":n<7?".45":".62";
+  candies.style.opacity=n>=4?".35":"0";
+
+  // Keep the reaction cat visible on every NO screen.
+  if(!openingScreen) face.style.display="grid";
+}
+
+function baseFinal(bg){
+  resetBase(bg);
+  gallery.style.display="none";
+  face.className="face hidden";
+  buttons.className="buttons hidden";
+  sub.className="sub hidden";
+  hearts.style.opacity=".75";
+  candies.style.opacity=".45";
+  makeCandies();
+}
+
+function clearPostCat(){
+  document.querySelectorAll(".postcat").forEach(x=>x.remove());
+}
+
+function show9(){
+  state=9;
+  clearPostCat();
+  baseFinal("linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)");
+  title.innerHTML='YAY!<div class="yes-sub">I’m so glad you said yes. 🥳🎉🎊</div>';
+  title.className="title yay-title";
+  title.style.top="21%";
+  title.style.fontSize="78px";
+
+  const cat=document.createElement("img");
+  cat.className="postcat";
+  cat.alt="happy cat";
+  cat.onerror=function(){this.onerror=null;this.src=fallbackCat};
+  cat.src="https://media.tenor.com/CnP64S7lszwAAAAj/meme-cat-cat-meme.gif";
+  modal.appendChild(cat);
+
+  cont.textContent="PRESS TO CONTINUE";
+  cont.className="continue";
+  cont.style.bottom="9%";
+}
+
+function show10(){
+  state=10;
+  clearPostCat();
+  baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
+  title.textContent="PICK A DATE";
+  title.className="title";
+  title.style.top="17%";
+  title.style.fontSize="31px";
+  title.style.color="#fff";
+  title.style.textShadow="0 5px 20px rgba(86,52,91,.22)";
+
+  sub.textContent="Choose da day 🥰";
+  sub.className="sub";
+  sub.style.top="29%";
+  sub.style.color="rgba(255,255,255,.94)";
+
+  date.className="date";
+  date.style.top="46%";
+
+  cont.textContent="CONTINUE →";
+  cont.className="continue";
+  cont.style.bottom="13%";
+}
+
+function show12(){
+  state=12;
+  baseFinal("linear-gradient(135deg,#eeb5d7,#c5b5e7 50%,#91b9e8)");
+  [...hearts.children].forEach(h=>h.style.animationDuration="2.8s");
+  title.textContent="IT'S A DATE! 💗";
+  title.className="title final";
+  title.style.top="31%";
+  sub.textContent="DATE: "+formatDate(date.value.trim()||"08/07/2026");
+  sub.className="sub";
+  sub.style.top="43%";
+  sub.style.fontSize="20px";
+  sub.style.fontWeight="800";
+}
+
+yes.addEventListener("click",show9);
+
+no.addEventListener("click",()=>{
+  if(state<8){
+    noPresses++;
+    apply(state+1);
+  }
+});
+
+cont.addEventListener("click",()=>{
+  if(state===9) show10();
+  else if(state===10){
+    if(!date.value.trim()) date.value="08/06/2026";
+    show12();
+  }
+});
+
+apply(0);
+</script>
+</body>
+      </html>
