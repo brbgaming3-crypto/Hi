@@ -214,19 +214,75 @@ function stopCurrentAudio(){
   }
 }
 
+// --- audio helpers (replace existing implementations) ---
+let currentAudio = null;
+
+function stopCurrentAudio(){
+  if(!currentAudio) return;
+  try{ currentAudio.pause(); }catch(e){}
+  try{ currentAudio.currentTime = 0; }catch(e){}
+  // best-effort remove listeners if you attached named handlers
+  currentAudio = null;
+}
+
+function attachLogging(audio, name){
+  if(!audio) return;
+  audio.preload = 'auto';
+  try{ audio.crossOrigin = 'anonymous'; }catch(e){}
+  audio.addEventListener('error', (e)=>{ console.warn(name + ' audio error', e); });
+  audio.addEventListener('play', ()=>{ console.log(name + ' audio play'); });
+  audio.addEventListener('pause', ()=>{ console.log(name + ' audio pause'); });
+}
+
 function playTibok(){
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.tibok.src);
-  currentAudio.addEventListener('loadedmetadata', () => {
-    try{ if (audioConfig.tibok.startTime) currentAudio.currentTime = audioConfig.tibok.startTime; }catch(e){}
-    currentAudio.play().catch(()=>{ stopCurrentAudio(); });
-  });
+  attachLogging(currentAudio, 'tibok');
+
+  const onMeta = () => {
+    try{
+      const start = Number(audioConfig.tibok.startTime) || 0;
+      // only seek if duration known and start < duration
+      if(start > 0 && !isNaN(currentAudio.duration) && currentAudio.duration > 0 && start < currentAudio.duration - 0.5){
+        try{ currentAudio.currentTime = start; }catch(e){ console.warn('tibok seek failed', e); }
+      }
+    }catch(e){ console.warn('tibok meta handling error', e); }
+    currentAudio.play().catch(err=>{ console.warn('tibok play rejected', err); stopCurrentAudio(); });
+    cleanup();
+  };
+
+  const onError = (e) => {
+    console.warn('tibok failed to load', e);
+    cleanup();
+  };
+
+  const cleanup = () => {
+    if(currentAudio){
+      currentAudio.removeEventListener('loadedmetadata', onMeta);
+      currentAudio.removeEventListener('error', onError);
+    }
+  };
+
+  currentAudio.addEventListener('loadedmetadata', onMeta);
+  currentAudio.addEventListener('error', onError);
+
+  // fallback: if metadata doesn't fire, try playing from start after 2s
+  const metaTimeout = setTimeout(()=>{
+    if(!currentAudio) return;
+    currentAudio.play().catch(err=>{ console.warn('tibok fallback play rejected', err); stopCurrentAudio(); });
+    cleanup();
+  }, 2000);
+
+  // clear timeout when cleaning up
+  const originalCleanup = cleanup;
+  cleanup = ()=>{ clearTimeout(metaTimeout); originalCleanup(); };
 }
 
 function playYesSound(){
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.yes.src);
-  currentAudio.play().catch(()=>{ stopCurrentAudio(); });
+  attachLogging(currentAudio, 'yes');
+  currentAudio.play().catch(err=>{ console.warn('yes play rejected', err); stopCurrentAudio(); });
 }
 
 function playRandomNoSound(){
@@ -236,10 +292,22 @@ function playRandomNoSound(){
   const track = audioConfig.noTracks[idx];
   if(!track || !track.src) return;
   currentAudio = new Audio(track.src);
-  currentAudio.addEventListener('loadedmetadata', () => {
-    try{ currentAudio.currentTime = track.startTime || 0; }catch(e){}
-    currentAudio.play().catch(()=>{ stopCurrentAudio(); });
-  });
+  attachLogging(currentAudio, 'no');
+  const onMeta = ()=>{
+    try{
+      const start = Number(track.startTime) || 0;
+      if(start > 0 && !isNaN(currentAudio.duration) && currentAudio.duration > 0 && start < currentAudio.duration - 0.5){
+        try{ currentAudio.currentTime = start; }catch(e){ console.warn('no seek failed', e); }
+      }
+    }catch(e){}
+    currentAudio.play().catch(err=>{ console.warn('no play rejected', err); stopCurrentAudio(); });
+    currentAudio.removeEventListener('loadedmetadata', onMeta);
+  };
+  currentAudio.addEventListener('loadedmetadata', onMeta);
+  // fallback: try play after 1s
+  setTimeout(()=>{ if(currentAudio && currentAudio.paused) currentAudio.play().catch(()=>{}); }, 1000);
+}
+// --- end audio helpers ---
 }
 
 const $ = id => document.getElementById(id);
