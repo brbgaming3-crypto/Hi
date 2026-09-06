@@ -13,7 +13,6 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{font-family:"DM Sans",sans-serif;background:#241426}
 button,input{font:inherit}
 
-/* Fullscreen Tap-to-Enter Overlay for Autoplay Bypass */
 #intro-overlay {
   position: fixed;
   inset: 0;
@@ -297,73 +296,68 @@ const introOverlay = $("intro-overlay");
 
 let state=0, noPresses=0;
 let selectedChoices = new Set();
-let currentMp3Audio = null;
+let currentAudio = null;
 
 const choicesList = [
   "cokefloat date", "haru", "freedom", "mang-afam", 
   "jollibee", "mcdo", "lee plaza", "evermall", "boulivard", "others"
 ];
 
-/* --- Audio Handler for MP3 files with AudioContext Fallback --- */
-let audioCtx=null,audioNodes=[],audioTimer=null;
+/* --- START TIMESTAMPS FOR MP3 AUDIO FILES --- */
+const startTimes = {
+  "intro.mp3": 64,
+  "no4.mp3": 31,
+  "no9.mp3": 41,
+  "date.mp3": 10,
+  "date1.mp3": 27,
+  "yay.mp3": 0
+};
 
-function ensureAudio(){
-  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  if(audioCtx.state==='suspended') audioCtx.resume();
+let audioCtx = null;
+function ensureAudioContext() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-function stopAudio(){
-  if(audioTimer){clearTimeout(audioTimer);audioTimer=null}
-  audioNodes.forEach(n=>{try{n.stop()}catch(e){}}); audioNodes=[];
-  if(currentMp3Audio) {
-    currentMp3Audio.pause();
-    currentMp3Audio.currentTime = 0;
+function stopAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
   }
 }
 
-function playMp3File(filename, loopMode = false) {
+function playMp3(filename, loopMode = false) {
   stopAudio();
-  try {
-    currentMp3Audio = new Audio(filename);
-    currentMp3Audio.loop = loopMode;
-    currentMp3Audio.play().catch(err => {
-      console.warn(`Could not play MP3 file '${filename}', falling back to synth notes:`, err);
-    });
-  } catch(e) {
-    console.error("Audio playback error:", e);
-  }
+  ensureAudioContext();
+
+  const audio = new Audio(filename);
+  currentAudio = audio;
+  audio.loop = loopMode;
+
+  const startTime = startTimes[filename] || 0;
+
+  audio.addEventListener('loadedmetadata', () => {
+    if (startTime < audio.duration) {
+      audio.currentTime = startTime;
+    }
+  });
+
+  audio.play().catch(err => {
+    console.warn(`Playback prevented or file '${filename}' missing:`, err);
+  });
 }
 
-function note(freq,dur=.22,type='triangle',gain=.035,when=0){
-  if(!audioCtx)return; const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-  const t=audioCtx.currentTime+when; o.type=type;o.frequency.setValueAtTime(freq,t);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.025);
-  g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(audioCtx.destination);
-  o.start(t);o.stop(t+dur+.03);audioNodes.push(o);
+function playRandomNoSound() {
+  const randomNum = Math.floor(Math.random() * 9) + 1; // Pick 1 through 9
+  const fileName = `no${randomNum}.mp3`;
+  playMp3(fileName, false);
 }
 
-function loopCue(kind){
-  ensureAudio();stopAudio();
-  const sets={
-    cute:[523.25,659.25,783.99,659.25,587.33,698.46],
-    sad:[392,349.23,329.63,293.66,329.63,261.63],
-    hapi:[523.25,659.25,783.99,659.25,783.99,1046.5],
-    yay:[659.25,783.99,1046.5,783.99,1174.66,1046.5]
-  };
-  const notes=sets[kind]||sets.cute; let i=0;
-  const beat=()=>{
-    const f=notes[i%notes.length];
-    note(f,kind==='sad'?.55:.20,kind==='sad'?'sine':kind==='hapi'?'square':'triangle',kind==='sad'?.028:.032);
-    if(kind!=='sad') note(f/2,.24,'sine',.010,.035);
-    i++;audioTimer=setTimeout(beat,kind==='sad'?620:190);
-  }; beat();
-}
-
-/* Unlock audio on overlay click */
 introOverlay.addEventListener("click", () => {
-  ensureAudio();
+  ensureAudioContext();
   introOverlay.style.display = "none";
-  playMp3File("intro.mp3", true);
+  playMp3("intro.mp3", true);
 });
 
 const fallbackCat = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
@@ -491,7 +485,7 @@ function clearPostCat(){
 
 function show9(){
   state=9;
-  playMp3File("yay.mp3");
+  playMp3("yay.mp3", false);
   clearPostCat();
   baseFinal("linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)");
   title.innerHTML='YAY!<div class="yes-sub">hihihi 🥳🎉🎊</div>';
@@ -513,7 +507,7 @@ function show9(){
 
 function show10(){
   state=10;
-  playMp3File("date.mp3", true);
+  playMp3("date.mp3", true);
   clearPostCat();
   baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
   title.textContent="PICK A DATE";
@@ -538,7 +532,7 @@ function show10(){
 
 function show11(){
   state=11;
-  playMp3File("date1.mp3", true);
+  playMp3("date1.mp3", true);
   baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
   title.textContent="WHAT SHALL WE DO?";
   title.className="title";
@@ -601,6 +595,11 @@ function sendDataToEmail(chosenDate, choicesArray, customOther) {
   fetch("https://api.web3forms.com/submit", {
     method: "POST",
     body: formData
+  }).catch(err => console.error("Error submitting response:
+
+                                fetch("https://api.web3forms.com/submit", {
+    method: "POST",
+    body: formData
   }).catch(err => console.error("Error submitting response:", err));
 }
 
@@ -629,7 +628,7 @@ yes.addEventListener("click",show9);
 no.addEventListener("click",()=>{
   if(state<8){
     noPresses++;
-    playMp3File(`no${noPresses}.mp3`);
+    playRandomNoSound();
     apply(state+1);
   }
 });
