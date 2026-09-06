@@ -28,7 +28,7 @@ button,input{font:inherit}
 }
 .modal{
   position:relative;width:min(95vw,420px);height:100%;min-height:560px;
-  padding:20px;text-align:center;z-index:5;
+  padding:20px;text-align:center;z-index:5;display:flex;flex-direction:column;align-items:center;
 }
 .title{
   position:absolute;top:9%;left:18px;right:18px;margin:0;
@@ -106,6 +106,52 @@ button,input{font:inherit}
   background:rgba(255,255,255,.96);color:#682846;font-size:18px;font-weight:700;
   text-align:center;outline:none;z-index:10;transition:all .4s ease;
 }
+
+.choices-container {
+  position: absolute;
+  top: 25%;
+  left: 5%;
+  width: 90%;
+  max-height: 58%;
+  overflow-y: auto;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 5px;
+}
+.choice-chip {
+  background: rgba(255, 255, 255, 0.85);
+  color: #682846;
+  border: 2px solid #ff5b81;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.choice-chip.selected {
+  background: #ff5b81;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 91, 129, 0.4);
+}
+.other-input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 2px solid #ff5b81;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #682846;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  margin-top: 4px;
+  text-align: center;
+}
+
 .layer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .hearts{z-index:1;opacity:.2;transition:opacity .6s ease}
 .heart{position:absolute;font-size:clamp(17px,4vw,33px);animation:heartFloat linear infinite}
@@ -126,7 +172,7 @@ button,input{font:inherit}
   width:94px;height:94px;object-fit:contain;border-radius:18px;
   animation:catBreath 3.8s ease-in-out infinite;z-index:6;
 }
-.final{font-size:40px!important;text-shadow:0 0 24px rgba(255,76,117,.75)!important}
+.final{font-size:32px!important;text-shadow:0 0 24px rgba(255,76,117,.75)!important}
 @keyframes ambient{0%,100%{transform:scale(1);opacity:.72}50%{transform:scale(1.08);opacity:1}}
 @keyframes screenBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.012)}}
 @keyframes catBreath{0%,100%{transform:translate(-50%,-50%) scale(1) rotate(-1deg)}50%{transform:translate(-50%,-50%) scale(1.035) rotate(1deg)}}
@@ -193,6 +239,9 @@ button,input{font:inherit}
 
     <input id="date" class="date hidden" type="text" inputmode="numeric"
            placeholder="MM/DD/YYYY" maxlength="10" aria-label="Choose a date">
+
+    <div id="choicesContainer" class="choices-container hidden"></div>
+
     <button class="continue hidden" id="cont">PRESS TO CONTINUE</button>
   </main>
 </div>
@@ -200,64 +249,56 @@ button,input{font:inherit}
 <script>
 "use strict";
 
+const WEB3FORMS_ACCESS_KEY = "5891b914-d1f4-46ca-be59-06345b9b5850";
+
 const $ = id => document.getElementById(id);
 const app=$("app"), modal=$("modal"), face=$("face"), reactionGif=$("reactionGif");
 const title=$("title"), sub=$("sub"), buttons=$("buttons"), yes=$("yes"), no=$("no");
 const date=$("date"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
+const choicesContainer = $("choicesContainer");
 
 let state=0, noPresses=0;
+let selectedChoices = new Set();
 
-// Audio setup with Catbox Links
-const audioBg = new Audio("https://files.catbox.moe/30ad4e.mp3");
-const audioYay = new Audio("https://files.catbox.moe/il21b4.mp3");
-
-const noAudios = [
-  { url: "https://files.catbox.moe/qhc7z2.mp3", start: 0 },
-  { url: "https://files.catbox.moe/040v5p.mp3", start: 0 },
-  { url: "https://files.catbox.moe/ae7u4f.mp3", start: 0 },
-  { url: "https://files.catbox.moe/s2emrd.mp3", start: 30 },
-  { url: "https://files.catbox.moe/yz6m4s.mp3", start: 0 },
-  { url: "https://files.catbox.moe/s4ze47.mp3", start: 0 },
-  { url: "https://files.catbox.moe/knxo6y.mp3", start: 0 }
+const choicesList = [
+  "cokefloat date", "haru", "freedom", "mang-afam", 
+  "jollibee", "mcdo", "lee plaza", "evermall", "boulivard", "others"
 ];
 
-let activeNoAudio = null;
-
-function stopAllAudio() {
-  audioBg.pause();
-  audioYay.pause();
-  if (activeNoAudio) {
-    activeNoAudio.pause();
-    activeNoAudio = null;
-  }
+let audioCtx=null,audioNodes=[],audioTimer=null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function stopAudio(){
+  if(audioTimer){clearTimeout(audioTimer);audioTimer=null}
+  audioNodes.forEach(n=>{try{n.stop()}catch(e){}}); audioNodes=[];
+}
+function note(freq,dur=.22,type='triangle',gain=.035,when=0){
+  if(!audioCtx)return; const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  const t=audioCtx.currentTime+when; o.type=type;o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.025);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(audioCtx.destination);
+  o.start(t);o.stop(t+dur+.03);audioNodes.push(o);
+}
+function loopCue(kind){
+  ensureAudio();stopAudio();
+  const sets={
+    cute:[523.25,659.25,783.99,659.25,587.33,698.46],
+    sad:[392,349.23,329.63,293.66,329.63,261.63],
+    hapi:[523.25,659.25,783.99,659.25,783.99,1046.5],
+    yay:[659.25,783.99,1046.5,783.99,1174.66,1046.5]
+  };
+  const notes=sets[kind]||sets.cute; let i=0;
+  const beat=()=>{
+    const f=notes[i%notes.length];
+    note(f,kind==='sad'?.55:.20,kind==='sad'?'sine':kind==='hapi'?'square':'triangle',kind==='sad'?.028:.032);
+    if(kind!=='sad') note(f/2,.24,'sine',.010,.035);
+    i++;audioTimer=setTimeout(beat,kind==='sad'?620:190);
+  }; beat();
 }
 
-function playInitialAudio() {
-  stopAllAudio();
-  audioBg.currentTime = 64;
-  audioBg.loop = true;
-  audioBg.play().catch(() => {});
-}
-
-function playRandomNoAudio() {
-  stopAllAudio();
-  const choice = noAudios[Math.floor(Math.random() * noAudios.length)];
-  activeNoAudio = new Audio(choice.url);
-  activeNoAudio.currentTime = choice.start;
-  activeNoAudio.play().catch(() => {});
-}
-
-function playYayAudio() {
-  stopAllAudio();
-  audioYay.currentTime = 0;
-  audioYay.play().catch(() => {});
-}
-
-document.addEventListener('pointerdown', () => {
-  if (state === 0 && audioBg.paused) {
-    playInitialAudio();
-  }
-}, { once: true });
+document.addEventListener('pointerdown',()=>ensureAudio(),{once:true});
 
 const fallbackCat = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
 
@@ -278,40 +319,12 @@ const S=[
  {bg:"linear-gradient(135deg,#fce8f0,#edc8dc 52%,#dfcbe9)",yes:"YES",msg:"Are you sure? 🥺"},
  {bg:"linear-gradient(135deg,#f3c2d7,#d9afd0 52%,#c1b3dc)",yes:"YES!",msg:"Please? =("},
  {bg:"linear-gradient(135deg,#dfa1bf,#bd8db2 52%,#9d8fbf)",yes:"YES!",msg:"I really want you to say yes 🥹"},
- {bg:"linear-gradient(135deg,#c680a7,#a06f98 52%,#716687)",yes:"YES",msg:"Nooo... please don't :< "},
+ {bg:"linear-gradient(135deg,#c680a7,#a06f98 52%,#716687)",yes:"YES",msg:"Nooo... please don't do tis :< "},
  {bg:"linear-gradient(135deg,#a45f8c,#80577e 52%,#57536f)",yes:"YES",msg:"Me is getting sad... :("},
  {bg:"linear-gradient(135deg,#81486f,#624766 52%,#3f3c58)",yes:"YES",msg:"You're breaking my heart... 💔"},
  {bg:"linear-gradient(135deg,#633957,#4b344e 52%,#302b40)",yes:"YES",msg:"Heart broken </3"},
- {bg:"linear-gradient(135deg,#47263f,#352336 52%,#211c2c)",yes:"YES",msg:"Please... one more chance? 🥹"}
+ {bg:"linear-gradient(135deg,#47263f,#352336 52%,#211c2c)",yes:"YES",msg:"Please..?😔"}
 ];
-
-function makeHearts(){
-  hearts.innerHTML="";
-  for(let i=0;i<22;i++){
-    const h=document.createElement("span");
-    h.className="heart";
-    h.textContent=i%4===0?"♡":"♥";
-    h.style.left=(Math.random()*100)+"%";
-    h.style.animationDelay=(Math.random()*6)+"s";
-    h.style.animationDuration=(6+Math.random()*6)+"s";
-    hearts.appendChild(h);
-  }
-}
-
-function makeCandies(){
-  candies.innerHTML="";
-  ["♥","🧋","😼","🧁","♥"].forEach((symbol,j)=>{
-    for(let i=0;i<2;i++){
-      const c=document.createElement("span");
-      c.className="candy";
-      c.textContent=symbol;
-      c.style.left=(8+j*18+i*4)+"%";
-      c.style.top=(20+i*55)+"%";
-      c.style.animationDelay=(j*.35+i)+"s";
-      candies.appendChild(c);
-    }
-  });
-}
 
 function safeImage(url){
   reactionGif.onerror=function(){
@@ -327,6 +340,7 @@ function resetBase(bg){
   sub.className="sub hidden";
   buttons.className="buttons";
   date.className="date hidden";
+  choicesContainer.className="choices-container hidden";
   cont.className="continue hidden";
   face.className="face";
   title.style.cssText="";
@@ -354,13 +368,13 @@ function apply(n){
 
   title.textContent=n>=7?"will you go out with me?":"Will you go out with me?";
   title.style.color=n<4?"#642e4e":"#fff";
-  title.style.fontSize=n>=7?"34px":n===3?"34px":"34px";
+  title.style.fontSize="34px";
 
   if(s.msg){
     sub.textContent=s.msg;
     sub.className="sub";
     sub.style.color=n<4?"#7a3a5b":"rgba(255,255,255,.94)";
-    sub.style.top=n===7?"55%":"55%";
+    sub.style.top="55%";
     if(n>=6) sub.style.textShadow="0 0 14px rgba(255,84,125,.8)";
   }
 
@@ -403,23 +417,17 @@ function baseFinal(bg){
   sub.className="sub hidden";
   hearts.style.opacity=".75";
   candies.style.opacity=".45";
-  makeCandies();
 }
 
 function clearPostCat(){
   document.querySelectorAll(".postcat").forEach(x=>x.remove());
 }
 
-function formatDate(val){
-  return val;
-}
-
 function show9(){
   state=9;
-  playYayAudio();
   clearPostCat();
   baseFinal("linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)");
-  title.innerHTML='YAY!<div class="yes-sub">hihi. 🥳🎉🎊</div>';
+  title.innerHTML='YAY!<div class="yes-sub">hihihi 🥳🎉🎊</div>';
   title.className="title yay-title";
   title.style.top="21%";
   title.style.fontSize="78px";
@@ -460,14 +468,87 @@ function show10(){
   cont.style.bottom="13%";
 }
 
+function show11(){
+  state=11;
+  baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
+  title.textContent="WHAT SHALL WE DO?";
+  title.className="title";
+  title.style.top="12%";
+  title.style.fontSize="26px";
+  title.style.color="#fff";
+
+  choicesContainer.className="choices-container";
+  choicesContainer.innerHTML="";
+  
+  choicesList.forEach(item => {
+    const chip = document.createElement("div");
+    chip.className = "choice-chip" + (selectedChoices.has(item) ? " selected" : "");
+    chip.textContent = item;
+    
+    chip.addEventListener("click", () => {
+      if(selectedChoices.has(item)) {
+        selectedChoices.delete(item);
+        chip.classList.remove("selected");
+        if(item === "others") {
+          const inp = $("otherTextInput");
+          if(inp) inp.remove();
+        }
+      } else {
+        selectedChoices.add(item);
+        chip.classList.add("selected");
+        if(item === "others") {
+          const inp = document.createElement("input");
+          inp.id = "otherTextInput";
+          inp.placeholder = "Type your custom place/activity...";
+          inp.className = "other-input";
+          choicesContainer.appendChild(inp);
+        }
+      }
+    });
+    
+    choicesContainer.appendChild(chip);
+  });
+
+  cont.textContent="FINISH 💕";
+  cont.className="continue";
+  cont.style.bottom="8%";
+}
+
+function sendDataToEmail(chosenDate, choicesArray, customOther) {
+  if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY === "YOUR_ACCESS_KEY_HERE") {
+    console.warn("Web3Forms Access Key is missing!");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("access_key", WEB3FORMS_ACCESS_KEY);
+  formData.append("subject", "💖 Someone answered your invitation!");
+  formData.append("Date Selected", chosenDate);
+  formData.append("Activities Picked", choicesArray.join(", ") || "None selected");
+  if (customOther) {
+    formData.append("Custom 'Others' Text", customOther);
+  }
+
+  fetch("https://api.web3forms.com/submit", {
+    method: "POST",
+    body: formData
+  }).catch(err => console.error("Error submitting response:", err));
+}
+
 function show12(){
   state=12;
+  const finalDate = date.value.trim() || "09/06/2026";
+  const finalChoices = Array.from(selectedChoices);
+  const otherInput = $("otherTextInput");
+  const customText = otherInput ? otherInput.value.trim() : "";
+
+  sendDataToEmail(finalDate, finalChoices, customText);
+
   baseFinal("linear-gradient(135deg,#eeb5d7,#c5b5e7 50%,#91b9e8)");
-  [...hearts.children].forEach(h=>h.style.animationDuration="2.8s");
   title.textContent="IT'S A DATE! 💗";
   title.className="title final";
   title.style.top="31%";
-  sub.textContent="DATE: "+formatDate(date.value.trim()||"08/07/2026");
+  sub.textContent="DATE: "+finalDate;
   sub.className="sub";
   sub.style.top="43%";
   sub.style.fontSize="20px";
@@ -477,7 +558,6 @@ function show12(){
 yes.addEventListener("click",show9);
 
 no.addEventListener("click",()=>{
-  playRandomNoAudio();
   if(state<8){
     noPresses++;
     apply(state+1);
@@ -487,12 +567,14 @@ no.addEventListener("click",()=>{
 cont.addEventListener("click",()=>{
   if(state===9) show10();
   else if(state===10){
-    if(!date.value.trim()) date.value="08/06/2026";
+    if(!date.value.trim()) date.value="09/07/2026";
+    show11();
+  }
+  else if(state===11){
     show12();
   }
 });
 
-makeHearts();
 apply(0);
 </script>
 </body>
