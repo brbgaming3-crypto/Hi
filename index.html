@@ -12,6 +12,37 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{font-family:"DM Sans",sans-serif;background:#241426}
 button,input{font:inherit}
+
+/* Fullscreen Tap-to-Enter Overlay for Autoplay Bypass */
+#intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: linear-gradient(135deg, #241426, #482141);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  text-align: center;
+  padding: 20px;
+}
+#intro-overlay h1 {
+  font-family: "Fredoka", sans-serif;
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+#intro-overlay p {
+  font-size: 18px;
+  opacity: 0.85;
+  animation: pulseText 1.5s ease-in-out infinite;
+}
+@keyframes pulseText {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
 .app{
   position:relative;width:100%;height:100%;display:grid;place-items:center;
   overflow:hidden;isolation:isolate;
@@ -213,6 +244,12 @@ button,input{font:inherit}
 </style>
 </head>
 <body>
+
+<div id="intro-overlay">
+  <h1>A Surprise For You 💖</h1>
+  <p>Tap anywhere to open</p>
+</div>
+
 <div class="app" id="app">
   <div class="layer hearts" id="hearts"></div>
   <div class="layer sparkles"></div>
@@ -256,24 +293,47 @@ const app=$("app"), modal=$("modal"), face=$("face"), reactionGif=$("reactionGif
 const title=$("title"), sub=$("sub"), buttons=$("buttons"), yes=$("yes"), no=$("no");
 const date=$("date"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
 const choicesContainer = $("choicesContainer");
+const introOverlay = $("intro-overlay");
 
 let state=0, noPresses=0;
 let selectedChoices = new Set();
+let currentMp3Audio = null;
 
 const choicesList = [
   "cokefloat date", "haru", "freedom", "mang-afam", 
   "jollibee", "mcdo", "lee plaza", "evermall", "boulivard", "others"
 ];
 
+/* --- Audio Handler for MP3 files with AudioContext Fallback --- */
 let audioCtx=null,audioNodes=[],audioTimer=null;
+
 function ensureAudio(){
   if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
 }
+
 function stopAudio(){
   if(audioTimer){clearTimeout(audioTimer);audioTimer=null}
   audioNodes.forEach(n=>{try{n.stop()}catch(e){}}); audioNodes=[];
+  if(currentMp3Audio) {
+    currentMp3Audio.pause();
+    currentMp3Audio.currentTime = 0;
+  }
 }
+
+function playMp3File(filename, loopMode = false) {
+  stopAudio();
+  try {
+    currentMp3Audio = new Audio(filename);
+    currentMp3Audio.loop = loopMode;
+    currentMp3Audio.play().catch(err => {
+      console.warn(`Could not play MP3 file '${filename}', falling back to synth notes:`, err);
+    });
+  } catch(e) {
+    console.error("Audio playback error:", e);
+  }
+}
+
 function note(freq,dur=.22,type='triangle',gain=.035,when=0){
   if(!audioCtx)return; const o=audioCtx.createOscillator(),g=audioCtx.createGain();
   const t=audioCtx.currentTime+when; o.type=type;o.frequency.setValueAtTime(freq,t);
@@ -281,6 +341,7 @@ function note(freq,dur=.22,type='triangle',gain=.035,when=0){
   g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(audioCtx.destination);
   o.start(t);o.stop(t+dur+.03);audioNodes.push(o);
 }
+
 function loopCue(kind){
   ensureAudio();stopAudio();
   const sets={
@@ -298,7 +359,12 @@ function loopCue(kind){
   }; beat();
 }
 
-document.addEventListener('pointerdown',()=>ensureAudio(),{once:true});
+/* Unlock audio on overlay click */
+introOverlay.addEventListener("click", () => {
+  ensureAudio();
+  introOverlay.style.display = "none";
+  playMp3File("intro.mp3", true);
+});
 
 const fallbackCat = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
 
@@ -425,6 +491,7 @@ function clearPostCat(){
 
 function show9(){
   state=9;
+  playMp3File("yay.mp3");
   clearPostCat();
   baseFinal("linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)");
   title.innerHTML='YAY!<div class="yes-sub">hihihi 🥳🎉🎊</div>';
@@ -446,6 +513,7 @@ function show9(){
 
 function show10(){
   state=10;
+  playMp3File("date.mp3", true);
   clearPostCat();
   baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
   title.textContent="PICK A DATE";
@@ -470,6 +538,7 @@ function show10(){
 
 function show11(){
   state=11;
+  playMp3File("date1.mp3", true);
   baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
   title.textContent="WHAT SHALL WE DO?";
   title.className="title";
@@ -560,6 +629,7 @@ yes.addEventListener("click",show9);
 no.addEventListener("click",()=>{
   if(state<8){
     noPresses++;
+    playMp3File(`no${noPresses}.mp3`);
     apply(state+1);
   }
 });
