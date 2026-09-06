@@ -1,52 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Will you go out with me?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fredoka:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:"DM Sans",sans-serif;background:#241426}
+button,input{font:inherit}
+.app{
+  position:relative;width:100%;height:100%;display:grid;place-items:center;
+  overflow:hidden;isolation:isolate;
+  background:linear-gradient(135deg,#fff4f8,#ffdce9 52%,#eee0f7);
+  transition:background .6s ease;
+}
+.app:before{
+  content:"";position:absolute;inset:-30%;
+  background:
+    radial-gradient(circle at 50% 40%,rgba(255,255,255,.42),transparent 28%),
+    radial-gradient(circle at 20% 85%,rgba(255,132,170,.18),transparent 25%),
+    radial-gradient(circle at 85% 15%,rgba(190,130,220,.16),transparent 25%);
+  animation:ambient 8s ease-in-out infinite;pointer-events:none;
+}
+.modal{
+  position:relative;width:min(95vw,420px);height:100%;min-height:560px;
+  padding:20px;text-align:center;z-index:5;
+}
+.title{
+  position:absolute;top:9%;left:18px;right:18px;margin:0;
+  font-family:"Fredoka",sans-serif;font-size:34px;font-weight:700;
+  line-height:1.12;letter-spacing:.2px;text-wrap:balance;
+  transition:all .4s ease;z-index:8;
+}
+.sub{
+  position:absolute;top:55%;left:22px;right:22px;margin:0;
+  font-size:17px;font-weight:600;line-height:1.35;
+  transition:all .4s ease;z-index:8;
+}
+.gallery{
+  position:absolute;left:50%;top:15%;transform:translateX(-50%);
+  width:min(94%,390px);height:57%;z-index:6;
+  pointer-events:none;
+}
+.gallery img{
+  position:absolute;width:clamp(55px,17vw,74px);height:clamp(55px,17vw,74px);
+  object-fit:contain;border-radius:16px;
+  filter:drop-shadow(0 7px 13px rgba(72,25,55,.18));
+  animation:galleryFloat 3.8s ease-in-out infinite;
+}
+/* First cat stays in the middle; the other five are deliberately scattered around it. */
+.gallery img:nth-child(1){left:calc(50% - clamp(38px,11.5vw,48px));top:calc(50% - clamp(38px,11.5vw,48px));width:clamp(76px,23vw,96px);height:clamp(76px,23vw,96px);animation-delay:0s}
+.gallery img:nth-child(2){left:7%;top:7%;animation-delay:.25s}
+.gallery img:nth-child(3){right:5%;top:10%;animation-delay:.5s}
+.gallery img:nth-child(4){left:2%;top:62%;animation-delay:.75s}
+.gallery img:nth-child(5){right:3%;top:58%;animation-delay:1s}
+.gallery img:nth-child(6){left:calc(50% - clamp(27px,8.5vw,37px));bottom:1%;animation-delay:1.25s}
+@keyframes galleryFloat{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-5px) rotate(2deg)}
+}
+.hidden{display:none!important}
+.face{
+  position:absolute;left:50%;top:38%;width:84px;height:84px;
+  transform:translate(-50%,-50%);
+  display:grid;place-items:center;z-index:6;pointer-events:none;
+  transition:all .4s ease;animation:catBreath 3.8s ease-in-out infinite;
+}
+.face img{
+  width:100%;height:100%;object-fit:contain;display:block;
+  border-radius:18px;filter:drop-shadow(0 9px 18px rgba(72,25,55,.2));
+}
+.buttons{
+  position:absolute;left:18px;right:18px;bottom:17%;
+  min-height:78px;display:flex;align-items:center;justify-content:center;
+  gap:16px;z-index:10;transition:all .4s ease;
+}
+.buttons button,.continue{
+  cursor:pointer;border-radius:999px;transition:all .4s ease;
+}
+.yes{
+  color:#fff;background:linear-gradient(135deg,#ff6388,#e63b6c);
+  border:2px solid rgba(255,255,255,.55);font-size:20px;font-weight:800;
+  padding:13px 31px;white-space:nowrap;
+  box-shadow:0 10px 30px rgba(218,47,103,.24);
+}
+.no{
+  color:#fff;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.7);font-size:16px;font-weight:700;
+  padding:10px 23px;white-space:nowrap;overflow:hidden;
+  flex:0 0 auto;min-width:0;
+}
+.continue{
+  position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
+  border:0;padding:16px 38px;color:#fff;font-size:20px;font-weight:800;
+  background:linear-gradient(135deg,#ff5c82,#c9204e);
+  box-shadow:0 0 30px rgba(255,76,116,.55);
+  animation:pulse 1.7s ease-in-out infinite;z-index:12;white-space:nowrap;
+}
+.date{
+  position:absolute;left:50%;top:48%;transform:translateX(-50%);
+  width:80%;padding:13px 20px;border:2px solid #ff5b81;border-radius:999px;
+  background:rgba(255,255,255,.96);color:#682846;font-size:18px;font-weight:700;
+  text-align:center;outline:none;z-index:10;transition:all .4s ease;
+}
+.layer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hearts{z-index:1;opacity:.2;transition:opacity .6s ease}
+.heart{position:absolute;font-size:clamp(17px,4vw,33px);animation:heartFloat linear infinite}
+.sparkles{
+  z-index:2;opacity:.28;
+  background-image:radial-gradient(circle,rgba(255,255,255,.9) 1px,transparent 1.8px);
+  background-size:38px 38px;animation:sparkleDrift 12s linear infinite;
+}
+.candies{z-index:2;opacity:0;transition:opacity .6s ease}
+.candy{position:absolute;font-size:21px;animation:candyFloat 6s ease-in-out infinite}
+.screen-breathe{animation:screenBreath 5s ease-in-out infinite}
+.yay{
+  font-family:"Pacifico",cursive!important;font-size:58px!important;
+  color:#ff4f79!important;text-shadow:0 8px 25px rgba(193,18,57,.2)!important;
+}
+.postcat{
+  position:absolute;left:50%;top:39%;transform:translate(-50%,-50%);
+  width:94px;height:94px;object-fit:contain;border-radius:18px;
+  animation:catBreath 3.8s ease-in-out infinite;z-index:6;
+}
+.final{font-size:40px!important;text-shadow:0 0 24px rgba(255,76,117,.75)!important}
+@keyframes ambient{0%,100%{transform:scale(1);opacity:.72}50%{transform:scale(1.08);opacity:1}}
+@keyframes screenBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.012)}}
+@keyframes catBreath{0%,100%{transform:translate(-50%,-50%) scale(1) rotate(-1deg)}50%{transform:translate(-50%,-50%) scale(1.035) rotate(1deg)}}
+@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.055)}}
+@keyframes heartFloat{0%{transform:translateY(110vh) rotate(-12deg);opacity:0}15%{opacity:.7}100%{transform:translateY(-18vh) rotate(18deg);opacity:0}}
+@keyframes sparkleDrift{to{background-position:38px -38px}}
+@keyframes candyFloat{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-15px) rotate(7deg)}}
+@media(max-width:430px){
+  .title{font-size:32px}.buttons{gap:10px}.yes{font-size:19px;padding:12px 25px}
+  .no{font-size:15px;padding:9px 19px}.continue{font-size:18px;padding:15px 29px}
+}
+
+.yay-title{
+  font-family:"Pacifico",cursive!important;
+  color:#fff!important;
+  text-shadow:0 7px 22px rgba(80,30,60,.25)!important;
+  line-height:1.15!important;
+}
+.yes-sub{
+  margin-top:13px;
+  font-family:"DM Sans",sans-serif;
+  font-size:19px;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:0;
+}
+.postcat{
+  position:absolute!important;
+  left:50%!important;
+  top:48%!important;
+  transform:translate(-50%,-50%)!important;
+  width:88px!important;
+  height:88px!important;
+  object-fit:contain!important;
+  margin:0!important;
+  z-index:6!important;
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="layer hearts" id="hearts"></div>
+  <div class="layer sparkles"></div>
+  <div class="layer candies" id="candies"></div>
+
+  <main class="modal" id="modal">
+    <div class="face" id="face"><img id="reactionGif" alt="cat reaction"></div>
+    <div class="gallery" id="gallery" aria-hidden="true">
+      <img src="https://media1.tenor.com/m/T9QdaRqSzkEAAAAd/a.gif" alt="cute cat">
+      <img src="https://media1.tenor.com/m/bmxESZp93QYAAAAd/cute-staring-cat.gif" alt="cute staring cat">
+      <img src="https://media1.tenor.com/m/M6hQzq3Ay-sAAAAd/cute-cat-cute.gif" alt="cute cat">
+      <img src="https://media.tenor.com/JDTbA8SLcr8AAAAj/cozy-cat-cozy.gif" alt="cozy cat">
+      <img src="https://media.tenor.com/JttVZJbiaRYAAAAj/cute-cat-smiling.gif" alt="smiling cat">
+      <img src="https://media.tenor.com/CeFAp9e3xuUAAAAj/lindo-gato-feliz.gif" alt="happy cat">
+    </div>
+
+    <h1 class="title screen-breathe" id="title">Will you go out with me?</h1>
+    <p class="sub hidden" id="sub"></p>
+
+    <div class="buttons" id="buttons">
+      <button class="yes" id="yes">YES</button>
+      <button class="no" id="no">NO</button>
+    </div>
+
+    <input id="date" class="date hidden" type="text" inputmode="numeric"
+           placeholder="MM/DD/YYYY" maxlength="10" aria-label="Choose a date">
+    <button class="continue hidden" id="cont">PRESS TO CONTINUE</button>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+// Audio Configuration using your direct Catbox links
+const audioConfig = {
+  tibok: {
+    src: "https://files.catbox.moe/30ad4e.mp3",
+    startTime: 0,
+    endTime: 64 // Stops automatically at 1:04
+  },
+  yes: {
+    src: "https://files.catbox.moe/il21b4.mp3"
+  },
+  noTracks: [
+    { name: "A Thousand Miles", src: "https://files.catbox.moe/qhc7z2.mp3", startTime: 0 },
+    { name: "River Flows in You", src: "https://files.catbox.moe/040v5p.mp3", startTime: 0 },
+    { name: "His Theme", src: "https://files.catbox.moe/ae7u4f.mp3", startTime: 0 },
+    { name: "Sana", src: "https://files.catbox.moe/s2emrd.mp3", startTime: 31 }, // Starts at 0:31
+    { name: "Eroplanong Papel", src: "https://files.catbox.moe/yz6m4s.mp3", startTime: 0 },
+    { name: "To the Bone (Instrumental)", src: "https://files.catbox.moe/s4ze47.mp3", startTime: 0 },
+    { name: "Iris (Instrumental)", src: "https://files.catbox.moe/knxo6y.mp3", startTime: 0 }
+  ]
+};
+
+// Global audio object reference
+let currentAudio = null;
+
+// Function to stop currently playing audio
+function stopCurrentAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+}
+
+// Play Section 1: Tibok
+function playTibok() {
+  stopCurrentAudio();
+  currentAudio = new Audio(audioConfig.tibok.src);
+  currentAudio.currentTime = audioConfig.tibok.startTime;
+  currentAudio.play().catch(e => console.log("Audio play blocked until interaction:", e));
+
+  // Stop automatically at 1:04
+  currentAudio.ontimeupdate = () => {
+    if (currentAudio.currentTime >= audioConfig.tibok.endTime) {
+      currentAudio.pause();
+    }
+  };
+}
+
+// Play Section 2: YES Reaction
+function playYesSound() {
+  stopCurrentAudio();
+  currentAudio = new Audio(audioConfig.yes.src);
+  currentAudio.play().catch(e => console.log("Audio play error:", e));
+}
+
+// Play Section 3: NO Reaction (Random Track Selection)
+function playRandomNoSound() {
+  stopCurrentAudio();
+  
+  // Pick a random track from the noTracks array
+  const randomIndex = Math.floor(Math.random() * audioConfig.noTracks.length);
+  const selectedTrack = audioConfig.noTracks[randomIndex];
+
+  currentAudio = new Audio(selectedTrack.src);
+  
+  // Ensure metadata is loaded before setting specific start times (e.g. 0:31)
+  currentAudio.addEventListener('loadedmetadata', () => {
+    currentAudio.currentTime = selectedTrack.startTime;
+    currentAudio.play().catch(error => {
+      console.error("Audio playback error:", error);
+    });
+  });
+}
+
+const $ = id => document.getElementById(id);
+const app=$("app"), modal=$("modal"), face=$("face"), reactionGif=$("reactionGif");
+const title=$("title"), sub=$("sub"), buttons=$("buttons"), yes=$("yes"), no=$("no");
 const date=$("date"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
 
 let state=0, noPresses=0;
 
-/* Audio: each screen gets its own cue. Exact commercial songs are not embedded;
-   these original Web-Audio cues are designed to evoke the requested moods while
-   keeping the HTML self-contained and avoiding broken/missing audio URLs. */
-let audioCtx=null,audioNodes=[],audioTimer=null;
-function ensureAudio(){
-  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  if(audioCtx.state==='suspended') audioCtx.resume();
-}
-function stopAudio(){
-  if(audioTimer){clearTimeout(audioTimer);audioTimer=null}
-  audioNodes.forEach(n=>{try{n.stop()}catch(e){}}); audioNodes=[];
-}
-function note(freq,dur=.22,type='triangle',gain=.035,when=0){
-  if(!audioCtx)return; const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-  const t=audioCtx.currentTime+when; o.type=type;o.frequency.setValueAtTime(freq,t);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.025);
-  g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(audioCtx.destination);
-  o.start(t);o.stop(t+dur+.03);audioNodes.push(o);
-}
-function loopCue(kind){
-  ensureAudio();stopAudio();
-  const sets={
-    cute:[523.25,659.25,783.99,659.25,587.33,698.46],
-    sad:[392,349.23,329.63,293.66,329.63,261.63],
-    hapi:[523.25,659.25,783.99,659.25,783.99,1046.5],
-    yay:[659.25,783.99,1046.5,783.99,1174.66,1046.5]
-  };
-  const notes=sets[kind]||sets.cute; let i=0;
-  const beat=()=>{
-    const f=notes[i%notes.length];
-    note(f,kind==='sad'?.55:.20,kind==='sad'?'sine':kind==='hapi'?'square':'triangle',kind==='sad'?.028:.032);
-    if(kind!=='sad') note(f/2,.24,'sine',.010,.035);
-    i++;audioTimer=setTimeout(beat,kind==='sad'?620:190);
-  }; beat();
-}
-function playForState(n){
-  if(n===0) loopCue('cute');
-  else if(n>=1&&n<=8) loopCue('sad');
-  else if(n===9) loopCue('hapi');
-  else loopCue('cute');
-}
-document.addEventListener('pointerdown',()=>ensureAudio(),{once:true});
-
-const fallbackCat =
-  "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
+const fallbackCat = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
 
 const gifs=[
   "https://media1.tenor.com/m/9EWwYOJnM_oAAAAd/cute-cats.gif",
@@ -130,8 +365,6 @@ function apply(n){
   const s=S[n];
   resetBase(s.bg);
 
-  // The six opening cats are only for the first screen. Once NO is clicked,
-  // hide the opening scatter and show the reaction cat for that NO stage.
   const openingScreen = (n===0);
   gallery.style.display=openingScreen?"block":"none";
   face.style.display=openingScreen?"none":"grid";
@@ -155,15 +388,12 @@ function apply(n){
 
   yes.textContent=s.yes;
 
-  /* YES keeps growing. The growth is capped only at the modal width,
-     not by the old percentage/min-width interaction. */
   const yesScale=1+(noPresses*0.12);
   yes.style.fontSize=Math.min(31,20+noPresses*1.15)+"px";
   yes.style.padding=(13+noPresses*0.5)+"px "+(31+noPresses*1.25)+"px";
   yes.style.transform="scale("+Math.min(1.28,yesScale)+")";
   yes.style.zIndex="11";
 
-  /* NO genuinely shrinks every click, including its box. */
   const shrink=Math.pow(0.62,noPresses);
   const width=Math.max(10,48*shrink);
   const height=Math.max(10,38*shrink);
@@ -178,14 +408,12 @@ function apply(n){
   no.style.opacity=Math.max(.08,1-noPresses*.105);
   no.style.borderWidth=noPresses>=6?"0":"1px";
 
-  /* Later, the YES visual dominates without removing NO. */
   buttons.style.gap=Math.max(3,16-noPresses*1.5)+"px";
   buttons.style.bottom=noPresses>=6?"16%":"17%";
 
   hearts.style.opacity=n===0?".10":n<4?".28":n<7?".45":".62";
   candies.style.opacity=n>=4?".35":"0";
 
-  // Keep the reaction cat visible on every NO screen.
   if(!openingScreen) face.style.display="grid";
 }
 
@@ -206,6 +434,7 @@ function clearPostCat(){
 
 function show9(){
   state=9;
+  playYesSound();
   clearPostCat();
   baseFinal("linear-gradient(135deg,#7d466c,#b9678d 52%,#e7b4cc)");
   title.innerHTML='YAY!<div class="yes-sub">I’m so glad you said yes. 🥳🎉🎊</div>';
@@ -256,7 +485,7 @@ function show12(){
   title.textContent="IT'S A DATE! 💗";
   title.className="title final";
   title.style.top="31%";
-  sub.textContent="DATE: "+formatDate(date.value.trim()||"08/07/2026");
+  sub.textContent="DATE: "+(date.value.trim()||"08/07/2026");
   sub.className="sub";
   sub.style.top="43%";
   sub.style.fontSize="20px";
@@ -269,6 +498,7 @@ no.addEventListener("click",()=>{
   if(state<8){
     noPresses++;
     apply(state+1);
+    playRandomNoSound();
   }
 });
 
@@ -280,7 +510,15 @@ cont.addEventListener("click",()=>{
   }
 });
 
+// Play background music on first tap anywhere
+document.addEventListener("click", () => {
+  if (state === 0 && !currentAudio) {
+    playTibok();
+  }
+}, { once: true });
+
+makeHearts();
 apply(0);
 </script>
 </body>
-      </html>
+</html>
