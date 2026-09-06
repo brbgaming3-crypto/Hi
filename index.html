@@ -132,7 +132,7 @@ button,input{font:inherit}
   box-shadow:0 0 30px rgba(255,76,116,.55);
   animation:pulse 1.7s ease-in-out infinite;z-index:12;white-space:nowrap;
 }
-.date{
+.date, .time-input{
   position:absolute;left:50%;top:48%;transform:translateX(-50%);
   width:80%;padding:13px 20px;border:2px solid #ff5b81;border-radius:999px;
   background:rgba(255,255,255,.96);color:#682846;font-size:18px;font-weight:700;
@@ -264,6 +264,9 @@ button,input{font:inherit}
     <input id="date" class="date hidden" type="text" inputmode="numeric"
            placeholder="MM/DD/YYYY" maxlength="10" aria-label="Choose a date">
 
+    <input id="time" class="time-input hidden" type="text"
+           placeholder="12:00 PM" maxlength="10" aria-label="Choose a time">
+
     <div id="choicesContainer" class="choices-container hidden"></div>
 
     <button class="continue hidden" id="cont">PRESS TO CONTINUE</button>
@@ -278,13 +281,16 @@ const WEB3FORMS_ACCESS_KEY = "5891b914-d1f4-46ca-be59-06345b9b5850";
 const $ = id => document.getElementById(id);
 const app=$("app"), modal=$("modal"), face=$("face"), reactionGif=$("reactionGif");
 const title=$("title"), sub=$("sub"), buttons=$("buttons"), yes=$("yes"), no=$("no");
-const date=$("date"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
+const date=$("date"), timeInput=$("time"), cont=$("cont"), hearts=$("hearts"), candies=$("candies"), gallery=$("gallery");
 const choicesContainer = $("choicesContainer");
 const introOverlay = $("intro-overlay");
 
 let state=0, noPresses=0;
 let selectedChoices = new Set();
 let currentMp3Audio = null;
+
+/* Pool tracking to avoid repeating NO tracks */
+let availableNoList = [1, 3, 4, 5, 6, 7, 8, 9];
 
 const choicesList = [
   "cokefloat date", "haru", "freedom", "mang-afam", 
@@ -322,10 +328,14 @@ function playMp3File(filename, startTime = 0, loopMode = false) {
   }
 }
 
-/* Play randomized NO reaction audio (Excluding no2) */
+/* Play non-repeating randomized NO reaction audio */
 function playRandomNoAudio() {
-  const validNoList = [1, 3, 4, 5, 6, 7, 8, 9];
-  const randomNum = validNoList[Math.floor(Math.random() * validNoList.length)];
+  if (availableNoList.length === 0) {
+    availableNoList = [1, 3, 4, 5, 6, 7, 8, 9]; // reset pool if exhausted
+  }
+  
+  const randomIndex = Math.floor(Math.random() * availableNoList.length);
+  const randomNum = availableNoList.splice(randomIndex, 1)[0];
   const fileName = `no${randomNum}.mp3`;
   
   let startTime = 0;
@@ -387,6 +397,7 @@ function resetBase(bg){
   sub.className="sub hidden";
   buttons.className="buttons";
   date.className="date hidden";
+  timeInput.className="time-input hidden";
   choicesContainer.className="choices-container hidden";
   cont.className="continue hidden";
   face.className="face";
@@ -517,6 +528,28 @@ function show10(){
   cont.style.bottom="13%";
 }
 
+function showTimePicker(){
+  state=13; // New state for Time selection
+  baseFinal("linear-gradient(135deg,#f1b8d5,#cdb7e5 52%,#aebfe8)");
+  title.textContent="PICK A TIME";
+  title.className="title";
+  title.style.top="17%";
+  title.style.fontSize="31px";
+  title.style.color="#fff";
+
+  sub.textContent="What time works for you? ⏰";
+  sub.className="sub";
+  sub.style.top="29%";
+  sub.style.color="rgba(255,255,255,.94)";
+
+  timeInput.className="time-input";
+  timeInput.style.top="46%";
+
+  cont.textContent="CONTINUE →";
+  cont.className="continue";
+  cont.style.bottom="13%";
+}
+
 function show11(){
   state=11;
   playMp3File("date1.mp3", 27, true);
@@ -564,7 +597,7 @@ function show11(){
   cont.style.bottom="8%";
 }
 
-function sendDataToEmail(chosenDate, choicesArray, customOther) {
+function sendDataToEmail(chosenDate, chosenTime, choicesArray, customOther) {
   if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY === "YOUR_ACCESS_KEY_HERE") {
     console.warn("Web3Forms Access Key is missing!");
     return;
@@ -574,6 +607,7 @@ function sendDataToEmail(chosenDate, choicesArray, customOther) {
   formData.append("access_key", WEB3FORMS_ACCESS_KEY);
   formData.append("subject", "💖 Someone answered your invitation!");
   formData.append("Date Selected", chosenDate);
+  formData.append("Time Selected", chosenTime);
   formData.append("Activities Picked", choicesArray.join(", ") || "None selected");
   if (customOther) {
     formData.append("Custom 'Others' Text", customOther);
@@ -588,19 +622,20 @@ function sendDataToEmail(chosenDate, choicesArray, customOther) {
 function show12(){
   state=12;
   const finalDate = date.value.trim() || "09/06/2026";
+  const finalTime = timeInput.value.trim() || "5:00 PM";
   const finalChoices = Array.from(selectedChoices);
   const otherInput = $("otherTextInput");
   const customText = otherInput ? otherInput.value.trim() : "";
 
-  sendDataToEmail(finalDate, finalChoices, customText);
+  sendDataToEmail(finalDate, finalTime, finalChoices, customText);
 
   baseFinal("linear-gradient(135deg,#eeb5d7,#c5b5e7 50%,#91b9e8)");
   title.textContent="IT'S A DATE! 💗";
   title.className="title final";
-  title.style.top="31%";
-  sub.textContent="DATE: "+finalDate;
+  title.style.top="28%";
+  sub.textContent="DATE: "+finalDate+" @ "+finalTime;
   sub.className="sub";
-  sub.style.top="43%";
+  sub.style.top="42%";
   sub.style.fontSize="20px";
   sub.style.fontWeight="800";
 }
@@ -619,6 +654,10 @@ cont.addEventListener("click",()=>{
   if(state===9) show10();
   else if(state===10){
     if(!date.value.trim()) date.value="09/07/2026";
+    showTimePicker();
+  }
+  else if(state===13){
+    if(!timeInput.value.trim()) timeInput.value="5:00 PM";
     show11();
   }
   else if(state===11){
