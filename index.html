@@ -201,24 +201,27 @@ button,input{font:inherit}
 <script>
 "use strict";
 
-// Audio Configuration using your direct Catbox links
+// Audio Configuration
 const audioConfig = {
+  // Opening section song: Tibok
   tibok: {
     src: "https://files.catbox.moe/30ad4e.mp3",
     startTime: 0,
-    endTime: 64 // Stops automatically at 1:04
+    endTime: 64 // Auto-stop at 1:04
   },
+  // YES / YAY section song: Happi Happi Happi
   yes: {
     src: "https://files.catbox.moe/il21b4.mp3"
   },
+  // NO section tracks (randomized)
   noTracks: [
-    { name: "A Thousand Miles", src: "https://files.catbox.moe/qhc7z2.mp3", startTime: 0 },
-    { name: "River Flows in You", src: "https://files.catbox.moe/040v5p.mp3", startTime: 0 },
-    { name: "His Theme", src: "https://files.catbox.moe/ae7u4f.mp3", startTime: 0 },
-    { name: "Sana", src: "https://files.catbox.moe/s2emrd.mp3", startTime: 31 }, // Starts at 0:31
-    { name: "Eroplanong Papel", src: "https://files.catbox.moe/yz6m4s.mp3", startTime: 0 },
-    { name: "To the Bone (Instrumental)", src: "https://files.catbox.moe/s4ze47.mp3", startTime: 0 },
-    { name: "Iris (Instrumental)", src: "https://files.catbox.moe/knxo6y.mp3", startTime: 0 }
+    { name: "Track 1", src: "https://files.catbox.moe/qhc7z2.mp3", startTime: 0 },
+    { name: "Track 2", src: "https://files.catbox.moe/040v5p.mp3", startTime: 0 },
+    { name: "Track 3", src: "https://files.catbox.moe/ae7u4f.mp3", startTime: 0 },
+    { name: "Track 4", src: "https://files.catbox.moe/s2emrd.mp3", startTime: 31 }, // Starts at 0:31
+    { name: "Track 5", src: "https://files.catbox.moe/yz6m4s.mp3", startTime: 0 },
+    { name: "Track 6", src: "https://files.catbox.moe/s4ze47.mp3", startTime: 0 },
+    { name: "Track 7", src: "https://files.catbox.moe/knxo6y.mp3", startTime: 0 }
   ]
 };
 
@@ -240,7 +243,6 @@ function playTibok() {
   currentAudio.currentTime = audioConfig.tibok.startTime;
   currentAudio.play().catch(e => console.log("Audio play blocked until interaction:", e));
 
-  // Stop automatically at 1:04
   currentAudio.ontimeupdate = () => {
     if (currentAudio.currentTime >= audioConfig.tibok.endTime) {
       currentAudio.pause();
@@ -248,7 +250,7 @@ function playTibok() {
   };
 }
 
-// Play Section 2: YES Reaction
+// Play Section 2: YES / YAY Reaction (Happi Happi)
 function playYesSound() {
   stopCurrentAudio();
   currentAudio = new Audio(audioConfig.yes.src);
@@ -259,13 +261,11 @@ function playYesSound() {
 function playRandomNoSound() {
   stopCurrentAudio();
   
-  // Pick a random track from the noTracks array
   const randomIndex = Math.floor(Math.random() * audioConfig.noTracks.length);
   const selectedTrack = audioConfig.noTracks[randomIndex];
 
   currentAudio = new Audio(selectedTrack.src);
   
-  // Ensure metadata is loaded before setting specific start times (e.g. 0:31)
   currentAudio.addEventListener('loadedmetadata', () => {
     currentAudio.currentTime = selectedTrack.startTime;
     currentAudio.play().catch(error => {
@@ -510,7 +510,7 @@ cont.addEventListener("click",()=>{
   }
 });
 
-// Play background music on first tap anywhere
+// Play Tibok on first tap anywhere
 document.addEventListener("click", () => {
   if (state === 0 && !currentAudio) {
     playTibok();
